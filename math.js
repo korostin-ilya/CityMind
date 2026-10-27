@@ -395,9 +395,9 @@
   const SHORT_KIND = { cur: 'current', tot: 'total', rel: 'rel' };
 
   function texKind(L, kind) {
-    if (kind === 'current') return `${L}_{i}`;
-    if (kind === 'total') return `\\Sigma ${L}`;
-    return `\\tfrac{${L}_{i}}{\\Sigma ${L}}`;
+    if (kind === 'current') return `{${L}_{i}}`;
+    if (kind === 'total') return `{\\Sigma ${L}}`;
+    return `{\\tfrac{${L}_{i}}{\\Sigma ${L}}}`;
   }
 
   function symbolTex(name) {
@@ -406,24 +406,55 @@
       return texKind(TEX_LETTER[m[1]], m[2]);
     }
     if ((m = name.match(/^([VPCSUF])_(cur|tot|rel)$/))) return texKind(m[1], SHORT_KIND[m[2]]);
-    if (/^w[SUPCFV]$/.test(name)) return `w_{${name[1]}}`;
-    if (/^[SUPCFV]$/.test(name)) return `\\hat{${name}}`;
-    if (name === 'C_inv') return '\\hat{C}_{\\mathrm{inv}}';
+    if (/^w[SUPCFV]$/.test(name)) return `{w_{${name[1]}}}`;
+    if (/^[SUPCFV]$/.test(name)) return `{\\hat{${name}}}`;
+    if (name === 'C_inv') return `{\\hat{C}_{\\mathrm{inv}}}`;
     if (name === 'problems_count' || name === 'N') return 'N';
     return null;
   }
 
-  /** LaTeX-представление формулы (для KaTeX) с красивыми обозначениями переменных */
+  /** LaTeX-представление формулы (для KaTeX) с красивыми математическими обозначениями */
   function toLatex(nodeOrText) {
     try {
       const node = typeof nodeOrText === 'string' ? global.math.parse(nodeOrText) : nodeOrText;
       const tex = node.toTex({
         parenthesis: 'keep',
         implicit: 'hide',
-        handler: function (n) {
-          if (n && n.type === 'SymbolNode') {
+        handler: function (n, options) {
+          if (!n) return undefined;
+          if (n.type === 'SymbolNode') {
             const t = symbolTex(n.name);
             if (t) return t;
+          }
+          if (n.type === 'ConditionalNode') {
+            const cond = n.condition ? n.condition.toTex(options) : '';
+            const tVal = n.trueExpr ? n.trueExpr.toTex(options) : '';
+            const fVal = n.falseExpr ? n.falseExpr.toTex(options) : '';
+            return `\\left( ${cond} \\;?\\; ${tVal} : ${fVal} \\right)`;
+          }
+          if (n.type === 'OperatorNode') {
+            if (n.op === '^' || n.name === 'pow') {
+              const b = n.args[0] ? n.args[0].toTex(options) : '';
+              const e = n.args[1] ? n.args[1].toTex(options) : '';
+              return `{${b}}^{{${e}}}`;
+            }
+            if (n.op === '*' || n.name === 'multiply') {
+              const l = n.args[0] ? n.args[0].toTex(options) : '';
+              const r = n.args[1] ? n.args[1].toTex(options) : '';
+              return `${l} \\cdot ${r}`;
+            }
+            if (n.op === '>=' || n.name === 'largerEq') {
+              return `${n.args[0].toTex(options)} \\ge ${n.args[1].toTex(options)}`;
+            }
+            if (n.op === '<=' || n.name === 'smallerEq') {
+              return `${n.args[0].toTex(options)} \\le ${n.args[1].toTex(options)}`;
+            }
+            if (n.op === 'or' || n.name === 'or') {
+              return `${n.args[0].toTex(options)} \\text{ или } ${n.args[1].toTex(options)}`;
+            }
+            if (n.op === 'and' || n.name === 'and') {
+              return `${n.args[0].toTex(options)} \\text{ и } ${n.args[1].toTex(options)}`;
+            }
           }
           return undefined;
         }

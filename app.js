@@ -176,6 +176,7 @@
 
   function defaultState() {
     return Object.assign(deepClone(D.DEFAULT_APP_STATE), {
+      formulaPresets: deepClone(D.FORMULA_PRESETS),
       problems: deepClone(D.PRESET_PROBLEMS),
       catalog: deepClone(D.DEFAULT_PROBLEM_CATALOG),
       baselineMeta: null,
@@ -233,7 +234,18 @@
     merged.budgetLimit = clamp(+merged.budgetLimit || 300, 50, 1000);
     merged.clusterRadiusMeters = clamp(+merged.clusterRadiusMeters || 0, 0, 500);
     if (!['sequential', 'greedy_fill'].includes(merged.budgetStrategy)) merged.budgetStrategy = 'sequential';
-    if (typeof merged.customFormula !== 'string') merged.customFormula = D.FORMULA_PRESETS[0].formula;
+    merged.formulaPresets = Array.isArray(s.formulaPresets) && s.formulaPresets.length
+      ? s.formulaPresets.map((p, idx) => ({
+          id: String(p.id || 'preset_' + (idx + 1)),
+          name: String(p.name || ('Модель ' + (idx + 1))),
+          shortName: String(p.shortName || ('Модель ' + (idx + 1))),
+          description: String(p.description || ''),
+          formula: String(p.formula || '')
+        }))
+      : deepClone(D.FORMULA_PRESETS);
+    if (typeof merged.customFormula !== 'string') {
+      merged.customFormula = merged.formulaPresets[0] ? merged.formulaPresets[0].formula : D.FORMULA_PRESETS[0].formula;
+    }
     return merged;
   }
 
@@ -249,12 +261,15 @@
   }
   const saveSoon = debounce(saveState, 350);
 
+  const getPresets = () => (Array.isArray(state.formulaPresets) && state.formulaPresets.length)
+    ? state.formulaPresets
+    : D.FORMULA_PRESETS;
   const getProblem = (id) => state.problems.find((p) => p.id === id);
   const evaluatedItems = () => state.problems.filter((p) => p.status === 'evaluated');
   const isFunded = (id) => !!(rt.allocation && rt.allocation.funded.has(id));
 
   function currentFormulaName() {
-    const p = D.FORMULA_PRESETS.find((x) => x.id === state.selectedPresetId);
+    const p = getPresets().find((x) => x.id === state.selectedPresetId);
     return p ? p.shortName : 'Пользовательская формула';
   }
 
@@ -266,7 +281,7 @@
   /** Принимает текст формулы: валидирует парсером, при успехе ставит кандидата на пересчёт */
   function applyFormulaText(text) {
     state.customFormula = text;
-    const preset = D.FORMULA_PRESETS.find((p) => normWs(p.formula) === normWs(text));
+    const preset = getPresets().find((p) => normWs(p.formula) === normWs(text));
     state.selectedPresetId = preset ? preset.id : 'custom';
     const c = E.compileFormula(text, state.weights);
     if (c.ok) {
@@ -381,7 +396,7 @@
     if (id === 'modalExplain') rt.explainId = null;
   }
   function closeTopModal() {
-    const order = ['modalLightbox', 'modalReject', 'modalEval', 'modalExplain'];
+    const order = ['modalLightbox', 'modalPreset', 'modalReject', 'modalEval', 'modalExplain'];
     for (const id of order) {
       const m = document.getElementById(id);
       if (m && !m.classList.contains('hidden')) { closeModal(id); return true; }
@@ -735,18 +750,51 @@
   // 9. РОЛЬ 3 — АДМИН / ЛАБОРАТОРИЯ
   // ==========================================================================
   function buildPresetButtons() {
-    $('#presetButtons').innerHTML = D.FORMULA_PRESETS.map((p) => `
-      <button type="button" data-action="preset" data-preset="${esc(p.id)}" title="${esc(p.description)}"
-        class="preset-btn text-xs sm:text-sm font-semibold rounded-lg border px-3 py-1.5 transition-colors">${esc(p.shortName)}</button>`).join('');
+    const presets = getPresets();
+    $('#presetButtons').innerHTML = presets.map((p, i) => {
+      const isSelected = p.id === state.selectedPresetId;
+      const isFirst = i === 0;
+      const isLast = i === presets.length - 1;
+      return `
+        <div data-preset-card="${esc(p.id)}" class="inline-flex items-center rounded-lg border shadow-xs transition-all text-xs font-semibold overflow-hidden group ${
+          isSelected
+            ? 'bg-indigo-600 border-indigo-600 text-white'
+            : 'bg-white border-slate-200 text-slate-700 hover:border-indigo-300'
+        }">
+          <button type="button" data-action="preset" data-preset="${esc(p.id)}" title="${esc(p.description || p.name)}"
+            class="preset-main-btn px-3 py-1.5 flex items-center gap-1.5 focus:outline-none select-none text-left">
+            <span>${esc(p.shortName)}</span>
+          </button>
+          <div class="preset-controls flex items-center border-l text-xs ${
+            isSelected
+              ? 'border-indigo-500/80 bg-indigo-700/60 text-white'
+              : 'border-slate-200 bg-slate-50 text-slate-500'
+          }">
+            <button type="button" data-action="preset-move" data-preset="${esc(p.id)}" data-dir="-1" title="Переместить влево (выше)"
+              class="px-1.5 py-1.5 hover:bg-black/10 transition-colors focus:outline-none ${isFirst ? 'opacity-30 cursor-not-allowed' : ''}">◀</button>
+            <button type="button" data-action="preset-move" data-preset="${esc(p.id)}" data-dir="1" title="Переместить вправо (ниже)"
+              class="px-1.5 py-1.5 hover:bg-black/10 transition-colors focus:outline-none ${isLast ? 'opacity-30 cursor-not-allowed' : ''}">▶</button>
+            <button type="button" data-action="preset-delete" data-preset="${esc(p.id)}" title="Удалить модель"
+              class="px-1.5 py-1.5 hover:bg-rose-500 hover:text-white transition-colors focus:outline-none">✕</button>
+          </div>
+        </div>`;
+    }).join('');
   }
 
   function renderPresetState() {
-    $$('.preset-btn').forEach((b) => {
-      const on = b.dataset.preset === state.selectedPresetId;
-      b.className = 'preset-btn text-xs sm:text-sm font-semibold rounded-lg border px-3 py-1.5 transition-colors ' +
-        (on ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:border-indigo-300 hover:bg-indigo-50');
+    const presets = getPresets();
+    $$('[data-preset-card]').forEach((card) => {
+      const pid = card.dataset.presetCard;
+      const isSelected = pid === state.selectedPresetId;
+      card.className = 'inline-flex items-center rounded-lg border shadow-xs transition-all text-xs font-semibold overflow-hidden group ' +
+        (isSelected ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-indigo-300');
+      const ctrls = card.querySelector('.preset-controls');
+      if (ctrls) {
+        ctrls.className = 'preset-controls flex items-center border-l text-xs ' +
+          (isSelected ? 'border-indigo-500/80 bg-indigo-700/60 text-white' : 'border-slate-200 bg-slate-50 text-slate-500');
+      }
     });
-    const p = D.FORMULA_PRESETS.find((x) => x.id === state.selectedPresetId);
+    const p = presets.find((x) => x.id === state.selectedPresetId);
     $('#presetDesc').innerHTML = p
       ? `<b class="text-slate-700">${esc(p.name)}.</b> ${esc(p.description)}`
       : '<b class="text-slate-700">Пользовательская формула.</b> Модель собрана вручную в калькуляторе.';
@@ -841,12 +889,13 @@
       const tex = E.toLatex(rt.compiled.node);
       if (tex && window.katex) {
         try {
-          window.katex.render(tex, host, { throwOnError: false, displayMode: true });
+          window.katex.render(tex, host, { throwOnError: true, displayMode: true });
         } catch (e) {
-          host.textContent = rt.compiled.text;
+          console.warn('[CityMind] KaTeX warning:', e);
+          host.innerHTML = `<code class="text-xs text-slate-800 font-mono">${esc(rt.compiled.text)}</code>`;
         }
       } else {
-        host.innerHTML = `<code class="text-xs">${esc(rt.compiled.text)}</code>`;
+        host.innerHTML = `<code class="text-xs text-slate-800 font-mono">${esc(rt.compiled.text)}</code>`;
       }
     }
   }
@@ -1964,14 +2013,124 @@
   // ==========================================================================
 
   function applyPreset(presetId) {
-    const p = D.FORMULA_PRESETS.find((x) => x.id === presetId);
+    const p = getPresets().find((x) => x.id === presetId);
     if (!p) return;
     state.selectedPresetId = p.id;
     $('#formulaInput').value = p.formula;
     applyFormulaText(p.formula);
     saveState();
+    buildPresetButtons();
+    renderPresetState();
     updateNow();
     toast(`Загружена модель: ${p.shortName}`, 'info');
+  }
+
+  function movePreset(presetId, dir) {
+    const presets = getPresets().slice();
+    const idx = presets.findIndex((p) => p.id === presetId);
+    if (idx === -1) return;
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= presets.length) return;
+    const item = presets.splice(idx, 1)[0];
+    presets.splice(newIdx, 0, item);
+    state.formulaPresets = presets;
+    saveState();
+    buildPresetButtons();
+    renderPresetState();
+  }
+
+  function deletePreset(presetId) {
+    const presets = getPresets();
+    if (presets.length <= 1) {
+      toast('Нельзя удалить последнюю оставшуюся модель в списке.', 'warning');
+      return;
+    }
+    const p = presets.find((x) => x.id === presetId);
+    if (!p) return;
+    if (!confirm(`Вы действительно хотите удалить модель «${p.name || p.shortName}»?`)) return;
+
+    state.formulaPresets = presets.filter((x) => x.id !== presetId);
+    if (state.selectedPresetId === presetId) {
+      applyPreset(state.formulaPresets[0].id);
+    } else {
+      saveState();
+      buildPresetButtons();
+      renderPresetState();
+    }
+    toast(`Модель «${p.shortName}» удалена`, 'info');
+  }
+
+  function openAddPresetModal(isSaveCurrent) {
+    const titleEl = $('#modalPresetTitle');
+    const formEl = $('#formNewPreset');
+    const formulaEl = $('#presetFormula');
+    const fullEl = $('#presetFullName');
+    const shortEl = $('#presetShortName');
+    const descEl = $('#presetDescription');
+    const errEl = $('#presetFormulaError');
+
+    errEl.classList.add('hidden');
+    errEl.textContent = '';
+    formEl.reset();
+
+    const presets = getPresets();
+    const nextNum = presets.length + 1;
+
+    if (isSaveCurrent) {
+      titleEl.textContent = 'Сохранить текущую формулу как модель';
+      const curFormula = ($('#formulaInput').value || '').trim() || state.customFormula || '';
+      formulaEl.value = curFormula;
+      fullEl.value = `${nextNum}. Пользовательская модель (${new Date().toLocaleDateString('ru-RU')})`;
+      shortEl.value = `Модель ${nextNum}`;
+      descEl.value = 'Пользовательская математическая модель приоритетности.';
+    } else {
+      titleEl.textContent = 'Добавить новую научную модель';
+      formulaEl.value = 'wS * S + wU * U + wP * P + wV * V + wF * F + wC * C_inv';
+      fullEl.value = `${nextNum}. Новая методика ранжирования`;
+      shortEl.value = `Модель ${nextNum}`;
+      descEl.value = '';
+    }
+
+    openModal('modalPreset');
+    setTimeout(() => fullEl.focus(), 50);
+  }
+
+  function submitAddPreset(e) {
+    e.preventDefault();
+    const name = ($('#presetFullName').value || '').trim();
+    const shortName = ($('#presetShortName').value || '').trim();
+    const formula = ($('#presetFormula').value || '').trim();
+    const desc = ($('#presetDescription').value || '').trim();
+    const errEl = $('#presetFormulaError');
+
+    if (!formula) {
+      errEl.textContent = 'Укажите формулу для вычисления приоритета.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    const c = E.compileFormula(formula, state.weights);
+    if (!c.ok) {
+      errEl.textContent = 'Синтаксическая ошибка: ' + c.error;
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    const newPreset = {
+      id: 'custom_preset_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+      name: name || ('Модель ' + (getPresets().length + 1)),
+      shortName: shortName || ('Модель ' + (getPresets().length + 1)),
+      description: desc || 'Пользовательская методика ранжирования проектов.',
+      formula: formula
+    };
+
+    const presets = getPresets().slice();
+    presets.push(newPreset);
+    state.formulaPresets = presets;
+
+    closeModal('modalPreset');
+    applyPreset(newPreset.id);
+    toast(`Модель «${newPreset.shortName}» успешно добавлена и активирована!`, 'success');
   }
 
   function insertToken(token) {
@@ -2338,6 +2497,17 @@
         if (pid) applyPreset(pid);
         return;
       }
+      if (act === 'preset-move') {
+        const pid = btn.dataset.preset;
+        const dir = parseInt(btn.dataset.dir, 10);
+        if (pid && dir) movePreset(pid, dir);
+        return;
+      }
+      if (act === 'preset-delete') {
+        const pid = btn.dataset.preset;
+        if (pid) deletePreset(pid);
+        return;
+      }
       if (act === 'token') {
         const tok = btn.dataset.token;
         if (tok) insertToken(tok);
@@ -2473,6 +2643,9 @@
     $('#weightSliders').addEventListener('input', onWeightInput);
     $('#btnNormalizeWeights').addEventListener('click', normalizeWeightsToOne);
     $('#btnResetWeights').addEventListener('click', resetWeightsDefault);
+    $('#btnNewPreset').addEventListener('click', () => openAddPresetModal(false));
+    $('#btnSaveAsPreset').addEventListener('click', () => openAddPresetModal(true));
+    $('#formNewPreset').addEventListener('submit', submitAddPreset);
 
     // Бюджет
     $('#budgetRange').addEventListener('input', (e) => setBudgetLimit(e.target.value));
@@ -2497,7 +2670,7 @@
     state = loadState();
 
     // Первоначальная компиляция формулы
-    applyFormulaText(state.customFormula || D.FORMULA_PRESETS[0].formula);
+    applyFormulaText(state.customFormula || (getPresets()[0] ? getPresets()[0].formula : D.FORMULA_PRESETS[0].formula));
     $('#formulaInput').value = state.customFormula;
 
     // Первоначальный расчёт модели
