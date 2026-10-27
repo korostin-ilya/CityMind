@@ -181,6 +181,7 @@
       catalog: deepClone(D.DEFAULT_PROBLEM_CATALOG),
       baselineMeta: null,
       citizenSort: 'rank',
+      budgetCeiling: 1000,
       schemaVersion: 1
     });
   }
@@ -231,7 +232,11 @@
     merged.catalog = s.catalog && typeof s.catalog === 'object' && Object.keys(s.catalog).length
       ? s.catalog : deepClone(D.DEFAULT_PROBLEM_CATALOG);
     merged.problems = (s.problems || []).map(normalizeProblem);
-    merged.budgetLimit = clamp(+merged.budgetLimit || 300, 50, 1000);
+    merged.budgetCeiling = Math.max(100, +s.budgetCeiling || 1000);
+    merged.budgetLimit = Math.max(0.1, +merged.budgetLimit || 300);
+    if (merged.budgetLimit > merged.budgetCeiling) {
+      merged.budgetCeiling = Math.ceil(merged.budgetLimit / 100) * 100;
+    }
     merged.clusterRadiusMeters = clamp(+merged.clusterRadiusMeters || 0, 0, 500);
     if (!['sequential', 'greedy_fill'].includes(merged.budgetStrategy)) merged.budgetStrategy = 'sequential';
     merged.formulaPresets = Array.isArray(s.formulaPresets) && s.formulaPresets.length
@@ -902,7 +907,24 @@
 
   function renderBudgetPanel() {
     const al = rt.allocation;
-    $('#budgetValue').textContent = fmt(state.budgetLimit);
+    const ceiling = Math.max(state.budgetLimit, state.budgetCeiling || 1000);
+    state.budgetCeiling = ceiling;
+
+    const bv = $('#budgetValue');
+    if (bv) bv.textContent = fmt(state.budgetLimit, 1);
+
+    const bni = $('#budgetNumInput');
+    if (bni && document.activeElement !== bni) bni.value = state.budgetLimit;
+
+    const bci = $('#budgetCeilingInput');
+    if (bci && document.activeElement !== bci) bci.value = ceiling;
+
+    const br = $('#budgetRange');
+    if (br) {
+      br.max = ceiling;
+      br.value = state.budgetLimit;
+    }
+
     $('#budgetSummary').innerHTML = `
       <div class="flex justify-between"><span>Освоено</span><b class="text-slate-900 tabular">${fmt(al.spent, 1)} млн ₸ (${fmt(al.utilization * 100, 1)}%)</b></div>
       <div class="flex justify-between"><span>Остаток бюджета</span><b class="text-slate-900 tabular">${fmt(al.remaining, 1)} млн ₸</b></div>
@@ -1311,10 +1333,7 @@
   function addCityLayers() {
     const map = rt.map;
     map.addSource('city', { type: 'geojson', data: D.EKIBASTUZ_GEOJSON });
-    const isBoundary = ['==', ['get', 'kind'], 'boundary'];
     const isRoad = ['==', ['get', 'kind'], 'arterial'];
-    map.addLayer({ id: 'city-fill', type: 'fill', source: 'city', filter: isBoundary, paint: { 'fill-color': '#6366f1', 'fill-opacity': 0.035 } });
-    map.addLayer({ id: 'city-outline', type: 'line', source: 'city', filter: isBoundary, paint: { 'line-color': '#6366f1', 'line-width': 1.5, 'line-opacity': 0.55, 'line-dasharray': [3, 2] } });
     map.addLayer({ id: 'city-roads-casing', type: 'line', source: 'city', filter: isRoad, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-opacity': 0.75 } });
     map.addLayer({ id: 'city-roads', type: 'line', source: 'city', filter: isRoad, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#64748b', 'line-width': 3, 'line-opacity': 0.5 } });
 
@@ -1506,9 +1525,46 @@
       </div>`;
   }
 
+  /** Обеспечивает полное отображение паспорта проблемы в пределах видимой области карты */
+  function keepPopupInView(coords) {
+    if (!rt.map) return;
+    const container = rt.map.getContainer();
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    if (!w || !h) return;
+
+    const currentPos = rt.map.project(coords);
+
+    // Паспорт карточки имеет ширину ~290px и высоту ~260-300px.
+    // Задаём безопасные зоны от краёв карты для комфортного размещения:
+    const padTop = 270;
+    const padBottom = 90;
+    const padLeft = 160;
+    const padRight = 160;
+
+    let targetX = currentPos.x;
+    let targetY = currentPos.y;
+
+    if (targetY < padTop) targetY = padTop;
+    else if (targetY > h - padBottom) targetY = h - padBottom;
+
+    if (targetX < padLeft) targetX = padLeft;
+    else if (targetX > w - padRight) targetX = w - padRight;
+
+    const dx = targetX - currentPos.x;
+    const dy = targetY - currentPos.y;
+
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+      const centerPoint = rt.map.project(rt.map.getCenter());
+      const newCenter = rt.map.unproject([centerPoint.x - dx, centerPoint.y - dy]);
+      rt.map.easeTo({ center: newCenter, duration: 320 });
+    }
+  }
+
   function showPopup(id) {
     const p = getProblem(id);
     if (!rt.map || !p) return;
+    keepPopupInView(p.coords);
     if (rt.popup) rt.popup.remove();
     rt.popupId = id;
     rt.popup = new window.maplibregl.Popup({ offset: 20, maxWidth: '290px', closeButton: true, focusAfterOpen: false })
@@ -1539,7 +1595,7 @@
       renderFilterOptions();
     }
     renderMapData();
-    rt.map.flyTo({ center: p.coords, zoom: Math.max(rt.map.getZoom(), 15.2), speed: 1.4 });
+    rt.map.flyTo({ center: p.coords, offset: [0, 80], zoom: Math.max(rt.map.getZoom(), 15.2), speed: 1.4 });
     rt.map.once('moveend', () => showPopup(id));
   }
 
@@ -1639,7 +1695,10 @@
     const src = photos[index];
     const img = $('#lbImg');
     img.src = src;
-    $('#lbStamp').textContent = `✓ Верифицировано CityMind • Фото ${index + 1} из ${photos.length}`;
+    const counter = $('#lbCounter');
+    if (counter) {
+      counter.textContent = photos.length > 1 ? `Фото ${index + 1} из ${photos.length}` : 'Фотодоказательство';
+    }
     $('#lbCaption').innerHTML = `
       <div class="font-bold text-white text-sm sm:text-base">${esc(item.title)}</div>
       <div class="text-xs text-slate-300 mt-1">${esc(item.details)}</div>
@@ -2189,11 +2248,35 @@
   }
 
   function setBudgetLimit(val) {
-    state.budgetLimit = clamp(Number(val) || 300, 50, 1000);
-    $('#budgetRange').value = state.budgetLimit;
-    $('#budgetValue').textContent = fmt(state.budgetLimit);
+    const num = Math.max(0.1, +(parseFloat(val) || 0.1).toFixed(1));
+    state.budgetLimit = num;
+    if (num > (state.budgetCeiling || 1000)) {
+      state.budgetCeiling = Math.ceil(num / 100) * 100;
+    }
+    const br = $('#budgetRange');
+    if (br) {
+      br.max = state.budgetCeiling;
+      br.value = num;
+    }
+    const bv = $('#budgetValue');
+    if (bv) bv.textContent = fmt(num, 1);
+    const bni = $('#budgetNumInput');
+    if (bni && document.activeElement !== bni) bni.value = num;
+    const bci = $('#budgetCeilingInput');
+    if (bci && document.activeElement !== bci) bci.value = state.budgetCeiling;
+
     saveSoon();
     scheduleUpdate();
+  }
+
+  function setBudgetCeiling(val) {
+    const ceil = Math.max(state.budgetLimit, Math.max(50, Math.round(parseFloat(val) || 1000)));
+    state.budgetCeiling = ceil;
+    const br = $('#budgetRange');
+    if (br) br.max = ceil;
+    const bci = $('#budgetCeilingInput');
+    if (bci && document.activeElement !== bci) bci.value = ceil;
+    saveSoon();
   }
 
   function setBudgetStrategy(strat) {
@@ -2649,6 +2732,8 @@
 
     // Бюджет
     $('#budgetRange').addEventListener('input', (e) => setBudgetLimit(e.target.value));
+    $('#budgetNumInput').addEventListener('input', (e) => setBudgetLimit(e.target.value));
+    $('#budgetCeilingInput').addEventListener('input', (e) => setBudgetCeiling(e.target.value));
     $$('input[name="budgetStrategy"]').forEach((r) => {
       r.addEventListener('change', (e) => setBudgetStrategy(e.target.value));
     });

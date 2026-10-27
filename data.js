@@ -139,7 +139,7 @@ function generatePresetPhotoSVG(category, codeLabel, locationLabel, coords, date
     <line x1="0" y1="256" x2="600" y2="256" stroke="${theme.accent}" stroke-width="2"/>
     <text x="20" y="280" fill="#ffffff" font-family="sans-serif" font-size="14" font-weight="bold">${codeLabel}: ${locationLabel}</text>
     <text x="20" y="302" fill="#94a3b8" font-family="monospace" font-size="12">GPS: ${lat}° N, ${lng}° E  |  г. Экибастуз  |  Дата: ${dateStr}</text>
-    <text x="20" y="322" fill="#38bdf8" font-family="sans-serif" font-size="11">✓ Верифицировано модулем геопривязки CityMind</text>
+
   </svg>`;
 
   return "data:image/svg+xml;utf8," + encodeURIComponent(svg.trim());
