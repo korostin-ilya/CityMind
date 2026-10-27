@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>CityMind — СППР приоритизации городских проблем г. Экибастуз</title>
+  <meta name="description" content="CityMind — интеллектуальная система поддержки управленческих решений для приоритизации городских проблем г. Экибастуз: кластеризация, экспертная оценка, конструктор формул, TOPSIS и Explainable AI." />
+  <meta name="theme-color" content="#4f46e5" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    if (window.tailwind) {
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'system-ui', 'sans-serif']
+            }
+          }
+        }
+      };
+    }
+  </script>
+
+  <!-- MapLibre GL JS -->
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <!-- Math.js -->
+  <script src="https://cdn.jsdelivr.net/npm/mathjs@13.2.0/lib/browser/math.min.js"></script>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    html { -webkit-tap-highlight-color: transparent; }
+    body { font-family: Inter, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, system-ui, sans-serif; }
+    input[type="range"] { accent-color: #4f46e5; cursor: pointer; }
+    .scrollbar-thin::-webkit-scrollbar { height: 6px; width: 6px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+
+    /* ---------- Маркеры карты (стили на внутреннем элементе: transform корня занят MapLibre) ---------- */
+    .cm-marker-root { cursor: pointer; }
+    .cm-marker {
+      position: relative; width: 30px; height: 30px; border-radius: 9999px;
+      display: flex; align-items: center; justify-content: center;
+      font: 700 12px/1 Inter, 'Segoe UI', system-ui, sans-serif; color: #fff;
+      border: 2px solid #fff; box-shadow: 0 2px 8px rgba(15, 23, 42, .35);
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .cm-marker:hover { transform: scale(1.15); }
+    .cm-funded  { background: #059669; }
+    .cm-deficit { background: #f59e0b; }
+    .cm-pending { background: #f5f3ff; color: #7c3aed; border: 2px dashed #7c3aed; }
+    .cm-rejected { background: #94a3b8; }
+    .cm-critical::after {
+      content: ''; position: absolute; top: -3px; left: -3px; width: 11px; height: 11px;
+      border-radius: 9999px; background: #e11d48; border: 2px solid #fff;
+    }
+    .cm-selected { box-shadow: 0 0 0 3px #fff, 0 0 0 6px #4f46e5, 0 4px 12px rgba(15,23,42,.4); transform: scale(1.12); }
+    .cm-badge {
+      position: absolute; top: -9px; right: -14px; background: #0f172a; color: #fff;
+      font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 9999px;
+      border: 1.5px solid #fff; line-height: 1;
+    }
+    .cm-road-label {
+      font: 600 10px/1.2 Inter, 'Segoe UI', system-ui, sans-serif; color: #475569;
+      background: rgba(255, 255, 255, .8); padding: 1px 6px; border-radius: 4px;
+      pointer-events: none; white-space: nowrap; border: 1px solid rgba(148,163,184,.4);
+    }
+    .cm-pick {
+      width: 20px; height: 20px; border-radius: 9999px; background: #4f46e5; border: 3px solid #fff;
+      box-shadow: 0 0 0 5px rgba(79, 70, 229, .3), 0 2px 8px rgba(15,23,42,.4);
+      animation: cmPulse 1.6s infinite;
+    }
+    @keyframes cmPulse {
+      0% { box-shadow: 0 0 0 0 rgba(79,70,229,.45), 0 2px 8px rgba(15,23,42,.4); }
+      70% { box-shadow: 0 0 0 12px rgba(79,70,229,0), 0 2px 8px rgba(15,23,42,.4); }
+      100% { box-shadow: 0 0 0 0 rgba(79,70,229,0), 0 2px 8px rgba(15,23,42,.4); }
+    }
+    .maplibregl-popup-content { border-radius: 12px; padding: 12px 14px 10px; box-shadow: 0 10px 30px rgba(15,23,42,.18); }
+    .maplibregl-popup-close-button { font-size: 18px; padding: 0 6px; color: #64748b; }
+    .map-crosshair .maplibregl-canvas { cursor: crosshair; }
+
+    /* ---------- Калькулятор формул ---------- */
+    .formula-tex .katex-display { margin: 0; overflow-x: auto; overflow-y: hidden; padding: 6px 0; }
+    .formula-tex .katex { font-size: 1.05em; }
+    .formula-invalid { border-color: #fb7185 !important; box-shadow: 0 0 0 4px rgba(251, 113, 133, .18) !important; }
+    .formula-valid { border-color: #a5b4fc; }
+
+    /* ---------- Таблица рейтинга ---------- */
+    .cell-input {
+      width: 100%; min-width: 3.25rem; border: 1px solid #e2e8f0; border-radius: 6px;
+      padding: 3px 5px; font-size: 12px; text-align: right; background: #fff;
+      font-variant-numeric: tabular-nums;
+    }
+    .cell-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.18); }
+    .row-flash { animation: rowFlash 2.2s ease-out; }
+    @keyframes rowFlash { 0% { background: #e0e7ff; } 100% { background: transparent; } }
+
+    /* ---------- Тосты ---------- */
+    .toast-enter { animation: toastIn .25s ease-out; }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+    /* ---------- Модальные окна ---------- */
+    .modal-open { overflow: hidden; }
+    [data-modal] { animation: fadeIn .15s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .tabular { font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
+
+  <!-- ===================================================================== -->
+  <!-- ШАПКА: логотип, переключатель ролей, операции с данными               -->
+  <!-- ===================================================================== -->
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
+    <div class="max-w-[1600px] mx-auto px-3 sm:px-5 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div class="flex items-center gap-2.5 mr-auto min-w-0">
+        <div class="w-9 h-9 shrink-0 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white flex items-center justify-center shadow">
+          <i data-lucide="brain-circuit" class="w-5 h-5"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="font-extrabold tracking-tight text-slate-900 leading-tight">CityMind <span class="text-indigo-600">Экибастуз</span></div>
+          <div class="text-[11px] text-slate-500 leading-tight truncate">СППР приоритизации городских проблем • XAI</div>
+        </div>
+      </div>
+
+      <!-- Role Switcher -->
+      <nav id="roleSwitcher" class="order-3 md:order-none w-full md:w-auto flex p-1 bg-slate-100 rounded-xl border border-slate-200 overflow-x-auto scrollbar-thin" aria-label="Переключатель ролей">
+        <button type="button" data-role-btn="citizen" class="flex-1 md:flex-none">👤 <span>Горожанин</span></button>
+        <button type="button" data-role-btn="evaluator" class="flex-1 md:flex-none">🛠 <span>Оценщик</span></button>
+        <button type="button" data-role-btn="admin" class="flex-1 md:flex-none">🔬 <span>Лаборатория</span></button>
+      </nav>
+
+      <div class="flex items-center gap-1.5">
+        <button id="btnAbout" type="button" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100" title="О проекте CityMind">
+          <i data-lucide="info" class="w-4 h-4"></i><span class="hidden sm:inline">О проекте</span>
+        </button>
+        <button id="btnExport" type="button" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200" title="Экспорт JSON">
+          <i data-lucide="download" class="w-4 h-4"></i><span class="hidden lg:inline">Экспорт JSON</span>
+        </button>
+        <button id="btnImport" type="button" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200" title="Импорт JSON">
+          <i data-lucide="upload" class="w-4 h-4"></i><span class="hidden lg:inline">Импорт JSON</span>
+        </button>
+        <input id="fileImport" type="file" accept="application/json,.json" class="hidden" />
+        <button id="btnReset" type="button" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium text-rose-700 bg-white hover:bg-rose-50 border border-rose-200" title="Сбросить к эталонным данным Экибастуза">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i><span class="hidden xl:inline">Сбросить к эталонным данным Экибастуза</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- БАННЕР «О ПРОЕКТЕ CITYMIND»                                            -->
+  <!-- ===================================================================== -->
+  <section id="aboutPanel" class="hidden border-b border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-violet-50">
+    <div class="max-w-[1600px] mx-auto px-3 sm:px-5 py-5">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">О проекте CityMind — научная новизна</h2>
+          <p class="text-sm text-slate-600 mt-1 max-w-4xl">
+            CityMind — интерактивная система поддержки управленческих решений (СППР / DSS) для сбора, пространственной кластеризации,
+            экспертной оценки и математической приоритизации городских проблем г. Экибастуз в условиях ограниченного бюджета
+            с прозрачным объяснением каждого решения (Explainable AI).
+          </p>
+        </div>
+        <button id="btnAboutClose" type="button" class="p-1.5 rounded-lg hover:bg-white text-slate-500" aria-label="Свернуть">
+          <i data-lucide="chevron-up" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3 mt-4 text-sm">
+        <div class="bg-white/80 border border-slate-200 rounded-xl p-3">
+          <div class="font-semibold text-slate-900">1. Классификатор + Complete-Linkage</div>
+          <p class="text-slate-600 mt-1">Двухуровневый справочник исключает дубли формулировок, а иерархическая кластеризация полной связи объединяет однотипные заявки в радиусе R без «эффекта цепочки» и пересечения окружностей.</p>
+        </div>
+        <div class="bg-white/80 border border-slate-200 rounded-xl p-3">
+          <div class="font-semibold text-slate-900">2. Конструктор научных моделей</div>
+          <p class="text-slate-600 mt-1">Любая формула приоритета вводится на языке Math.js, проверяется «на лету» и рендерится в LaTeX (KaTeX). Ошибка ввода не ломает расчёт — сохраняется последний валидный рейтинг.</p>
+        </div>
+        <div class="bg-white/80 border border-slate-200 rounded-xl p-3">
+          <div class="font-semibold text-slate-900">3. Explainable AI (Marginal Ablation)</div>
+          <p class="text-slate-600 mt-1">Вклад каждого из 6 факторов в балл вычисляется пофакторным исключением даже для нелинейных формул и объясняется естественным русским языком.</p>
+        </div>
+        <div class="bg-white/80 border border-slate-200 rounded-xl p-3">
+          <div class="font-semibold text-slate-900">4. Верификация TOPSIS + ρ Спирмена</div>
+          <p class="text-slate-600 mt-1">Пользовательский рейтинг всегда сверяется с эталонным методом TOPSIS; коэффициент ранговой корреляции показывает устойчивость и чувствительность модели.</p>
+        </div>
+        <div class="bg-white/80 border border-slate-200 rounded-xl p-3">
+          <div class="font-semibold text-slate-900">5. Портфельное бюджетирование</div>
+          <p class="text-slate-600 mt-1">Два алгоритма распределения бюджета: строго по рейтингу и умное дозаполнение остатка (Greedy Portfolio Fill), максимизирующее освоение средств.</p>
+        </div>
+        <div class="bg-white/80 border border-slate-200 rounded-xl p-3">
+          <div class="font-semibold text-slate-900">6. Автономность и верификация фото</div>
+          <p class="text-slate-600 mt-1">Работает с флешки без сервера (file://) и на GitHub Pages; фото сжимаются на клиенте через canvas с водяным знаком «CityMind Экибастуз | дата | координаты».</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main class="max-w-[1600px] mx-auto px-3 sm:px-5 py-4 space-y-4">
+
+    <!-- ===================================================================== -->
+    <!-- KPI-ПАНЕЛЬ                                                              -->
+    <!-- ===================================================================== -->
+    <section class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3" aria-label="Ключевые показатели">
+      <div class="bg-white border border-slate-200 rounded-xl p-3">
+        <div class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">В рейтинге</div>
+        <div class="text-2xl font-bold text-slate-900 tabular" id="kpiEvaluated">0</div>
+        <div class="text-xs text-slate-500">оценённых проблем</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3">
+        <div class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Очередь оценщика</div>
+        <div class="text-2xl font-bold text-violet-600 tabular" id="kpiPending">0</div>
+        <div class="text-xs text-slate-500" id="kpiPendingSub">новых заявок</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3">
+        <div class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Освоение бюджета</div>
+        <div class="text-lg font-bold text-slate-900 tabular leading-8" id="kpiBudget">0 / 0</div>
+        <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1"><div id="kpiBudgetBar" class="h-full bg-emerald-600 rounded-full transition-all" style="width:0%"></div></div>
+        <div class="text-xs text-slate-500 mt-1" id="kpiBudgetSub">млн ₸</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3">
+        <div class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Первостепенные</div>
+        <div class="text-2xl font-bold text-emerald-600 tabular" id="kpiFunded">0</div>
+        <div class="text-xs text-slate-500" id="kpiFundedSub">в бюджете</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3">
+        <div class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">ρ Спирмена: формула ↔ TOPSIS</div>
+        <div class="text-2xl font-bold text-indigo-600 tabular" id="kpiRho">—</div>
+        <div class="text-xs text-slate-500" id="kpiRhoLabel">устойчивость модели</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3 col-span-2 md:col-span-1">
+        <div class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Активная модель</div>
+        <div class="text-sm font-semibold text-slate-900 leading-snug mt-1" id="kpiFormula">—</div>
+        <div class="text-xs text-slate-500 mt-0.5" id="kpiStrategy">—</div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- КАРТА + БОКОВАЯ ПАНЕЛЬ РОЛИ                                            -->
+    <!-- ===================================================================== -->
+    <section class="grid lg:grid-cols-12 gap-4">
+      <!-- Карта -->
+      <div id="mapCard" class="lg:col-span-8 bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col scroll-mt-20">
+        <div class="px-3 sm:px-4 py-2.5 border-b border-slate-200 flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-2 mr-auto">
+            <i data-lucide="map" class="w-4 h-4 text-indigo-600"></i>
+            <h2 class="font-semibold text-slate-900 text-sm sm:text-base">Карта проблем г. Экибастуз</h2>
+          </div>
+          <label class="sr-only" for="mapFilterCategory">Категория</label>
+          <select id="mapFilterCategory" class="text-sm border border-slate-200 rounded-lg px-2 py-1.5 bg-white max-w-[48%] sm:max-w-none"></select>
+          <label class="sr-only" for="mapFilterStatus">Статус</label>
+          <select id="mapFilterStatus" class="text-sm border border-slate-200 rounded-lg px-2 py-1.5 bg-white max-w-[48%] sm:max-w-none">
+            <option value="all">Все активные</option>
+            <option value="pending">Ожидают оценщика</option>
+            <option value="evaluated">Оценённые (в рейтинге)</option>
+            <option value="funded">Первостепенные (в бюджете)</option>
+            <option value="deficit">Второстепенные (дефицит)</option>
+          </select>
+        </div>
+        <div class="relative">
+          <div id="map" class="w-full h-[360px] sm:h-[460px] lg:h-[560px] bg-slate-100"></div>
+          <div id="mapHint" class="hidden absolute top-3 left-3 right-14 sm:right-auto sm:max-w-sm bg-indigo-600 text-white text-xs sm:text-sm rounded-lg px-3 py-2 shadow-lg pointer-events-none">
+            📍 Кликните по карте, чтобы указать место проблемы
+          </div>
+          <div id="mapFallback" class="hidden absolute inset-0 flex items-center justify-center p-6 text-center bg-slate-100">
+            <div>
+              <div class="text-4xl">🗺️</div>
+              <div class="font-semibold text-slate-700 mt-2">Карта недоступна</div>
+              <div class="text-sm text-slate-500 mt-1 max-w-md">Библиотека MapLibre GL JS не загрузилась (нет доступа к CDN) или браузер не поддерживает WebGL. Остальные функции CityMind работают в штатном режиме.</div>
+            </div>
+          </div>
+        </div>
+        <div class="px-3 sm:px-4 py-2 border-t border-slate-200 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
+          <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-600 inline-block"></span>Первостепенная (в бюджете)</span>
+          <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>Второстепенная (дефицит)</span>
+          <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full border-2 border-dashed border-violet-600 bg-violet-50 inline-block"></span>Новая заявка (pending)</span>
+          <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block"></span>Критическая авария (≥ 9)</span>
+          <span class="inline-flex items-center gap-1.5"><span class="px-1 rounded-full bg-slate-900 text-white text-[10px] font-bold">×N</span>Кластер слитых заявок</span>
+        </div>
+      </div>
+
+      <!-- Боковая панель: ГОРОЖАНИН — форма подачи -->
+      <aside data-role-panel="citizen" class="lg:col-span-4 bg-white border border-slate-200 rounded-xl flex flex-col">
+        <div class="px-4 py-3 border-b border-slate-200">
+          <h2 class="font-semibold text-slate-900 flex items-center gap-2"><i data-lucide="megaphone" class="w-4 h-4 text-indigo-600"></i>Сообщить о проблеме</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Название выбирается из официального справочника — так заявки точно группируются.</p>
+        </div>
+        <form id="citizenForm" class="p-4 space-y-3" autocomplete="off" novalidate>
+          <div>
+            <label for="fCategory" class="block text-xs font-semibold text-slate-600 mb-1">Категория *</label>
+            <select id="fCategory" class="w-full text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white"></select>
+          </div>
+          <div>
+            <label for="fTitle" class="block text-xs font-semibold text-slate-600 mb-1">Типовая проблема *</label>
+            <select id="fTitle" class="w-full text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white"></select>
+          </div>
+          <div>
+            <label for="fDetails" class="block text-xs font-semibold text-slate-600 mb-1">Адрес, ориентиры и описание *</label>
+            <textarea id="fDetails" rows="3" maxlength="600" class="w-full text-sm border border-slate-200 rounded-lg px-2.5 py-2 resize-y" placeholder="Например: мкр. 8, у дома №14 — провал асфальта над теплотрассой, парит из люка"></textarea>
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="block text-xs font-semibold text-slate-600">Координаты *</span>
+              <button id="btnGeolocate" type="button" class="text-xs text-indigo-600 hover:underline">📍 Моя геопозиция</button>
+            </div>
+            <div id="fCoords" class="text-sm rounded-lg border border-dashed border-slate-300 bg-slate-50 px-2.5 py-2 text-slate-500">Кликните по карте Экибастуза</div>
+          </div>
+          <div>
+            <label for="fPhotos" class="block text-xs font-semibold text-slate-600 mb-1">Фотографии для валидации</label>
+            <label class="flex items-center justify-center gap-2 w-full text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-slate-50 hover:bg-slate-100 cursor-pointer text-slate-700">
+              <i data-lucide="camera" class="w-4 h-4"></i><span>Сделать / выбрать фото</span>
+              <input id="fPhotos" type="file" accept="image/*" capture="environment" multiple class="hidden" />
+            </label>
+            <p class="text-[11px] text-slate-500 mt-1">Сжатие до 700 px (JPEG 0.65) + водяной знак «CityMind Экибастуз | дата | координаты».</p>
+            <div id="fPhotoPreviews" class="grid grid-cols-4 gap-2 mt-2"></div>
+          </div>
+          <div id="fNearbyHint" class="hidden text-xs rounded-lg bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-2"></div>
+          <button id="btnSubmitProblem" type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-3 py-2.5 shadow-sm disabled:opacity-60">
+            <i data-lucide="send" class="w-4 h-4"></i><span>Отправить заявку</span>
+          </button>
+        </form>
+      </aside>
+
+      <!-- Боковая панель: ОЦЕНЩИК — кластеризация -->
+      <aside data-role-panel="evaluator" class="lg:col-span-4 bg-white border border-slate-200 rounded-xl flex flex-col">
+        <div class="px-4 py-3 border-b border-slate-200">
+          <h2 class="font-semibold text-slate-900 flex items-center gap-2"><i data-lucide="combine" class="w-4 h-4 text-indigo-600"></i>Пространственное объединение</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Disjoint Complete-Linkage: однотипные заявки (одинаковый title и статус) сливаются, только если все точки лежат в окружности радиуса R.</p>
+        </div>
+        <div class="p-4 space-y-4">
+          <div>
+            <div class="flex items-center justify-between">
+              <label for="clusterRadius" class="text-xs font-semibold text-slate-600">Радиус объединения однотипных проблем R (метров)</label>
+            </div>
+            <div class="flex items-center gap-3 mt-2">
+              <input id="clusterRadius" type="range" min="0" max="500" step="5" class="flex-1" />
+              <input id="clusterRadiusNum" type="number" min="0" max="500" step="5" class="w-20 text-sm border border-slate-200 rounded-lg px-2 py-1 text-right tabular" />
+            </div>
+            <div class="flex justify-between text-[10px] text-slate-400 mt-1"><span>0 м</span><span>250 м</span><span>500 м</span></div>
+          </div>
+          <div id="clusterPreview" class="rounded-lg border border-indigo-100 bg-indigo-50/60 p-3 text-sm text-slate-700"></div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
+            <button id="btnMerge" type="button" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-3 py-2.5">
+              <i data-lucide="merge" class="w-4 h-4"></i>Объединить проблемы в радиусе R
+            </button>
+            <button id="btnUnmerge" type="button" class="inline-flex items-center justify-center gap-2 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-sm px-3 py-2.5">
+              <i data-lucide="split" class="w-4 h-4"></i>Разъединить / Сбросить
+            </button>
+          </div>
+          <div class="text-xs text-slate-500 leading-relaxed border-t border-slate-100 pt-3">
+            <b class="text-slate-700">Правила агрегации:</b> голоса — сумма; серьёзность, срочность, охват — максимум; лёгкость — минимум;
+            стоимость — (C₁ + C₂) × 0.85 (экономия на масштабе 15%); фото и описания объединяются с нумерацией.
+          </div>
+        </div>
+      </aside>
+
+      <!-- Боковая панель: АДМИН — бюджет и сравнение методов -->
+      <aside data-role-panel="admin" class="lg:col-span-4 bg-white border border-slate-200 rounded-xl flex flex-col">
+        <div class="px-4 py-3 border-b border-slate-200">
+          <h2 class="font-semibold text-slate-900 flex items-center gap-2"><i data-lucide="wallet" class="w-4 h-4 text-indigo-600"></i>Бюджет и сравнение методов</h2>
+        </div>
+        <div class="p-4 space-y-4">
+          <div>
+            <div class="flex items-center justify-between">
+              <label for="budgetRange" class="text-xs font-semibold text-slate-600">Доступный городской бюджет</label>
+              <span class="text-sm font-bold text-indigo-700 tabular"><span id="budgetValue">300</span> млн ₸</span>
+            </div>
+            <input id="budgetRange" type="range" min="50" max="1000" step="5" class="w-full mt-2" />
+            <div class="flex justify-between text-[10px] text-slate-400"><span>50</span><span>500</span><span>1000 млн ₸</span></div>
+          </div>
+          <fieldset>
+            <legend class="text-xs font-semibold text-slate-600 mb-1.5">Алгоритм распределения бюджета</legend>
+            <div class="grid gap-2">
+              <label class="flex items-start gap-2 rounded-lg border border-slate-200 p-2.5 cursor-pointer hover:bg-slate-50 has-[:checked]:border-indigo-400 has-[:checked]:bg-indigo-50/60">
+                <input type="radio" name="budgetStrategy" value="sequential" class="mt-0.5 accent-indigo-600" />
+                <span><span class="text-sm font-semibold text-slate-800">Режим 1: Строго по порядку рейтинга</span><span class="block text-xs text-slate-500">Финансируем сверху вниз, пока хватает остатка.</span></span>
+              </label>
+              <label class="flex items-start gap-2 rounded-lg border border-slate-200 p-2.5 cursor-pointer hover:bg-slate-50 has-[:checked]:border-indigo-400 has-[:checked]:bg-indigo-50/60">
+                <input type="radio" name="budgetStrategy" value="greedy_fill" class="mt-0.5 accent-indigo-600" />
+                <span><span class="text-sm font-semibold text-slate-800">Режим 2: Умное дозаполнение остатка</span><span class="block text-xs text-slate-500">Greedy Portfolio Fill: дорогая задача пропускается, остаток добирается следующими по рейтингу.</span></span>
+              </label>
+            </div>
+          </fieldset>
+          <div id="budgetSummary" class="text-xs text-slate-600 rounded-lg bg-slate-50 border border-slate-200 p-3 space-y-1"></div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="rounded-lg border border-slate-200 p-3">
+              <div class="text-[11px] text-slate-500 font-semibold">ρ формула ↔ TOPSIS</div>
+              <div id="rhoTopsis" class="text-xl font-bold text-indigo-600 tabular">—</div>
+              <div id="rhoTopsisLabel" class="text-[11px] text-slate-500">—</div>
+            </div>
+            <div class="rounded-lg border border-slate-200 p-3">
+              <div class="text-[11px] text-slate-500 font-semibold">ρ текущий ↔ Слот А</div>
+              <div id="rhoBaseline" class="text-xl font-bold text-slate-700 tabular">—</div>
+              <div id="rhoBaselineLabel" class="text-[11px] text-slate-500">слот не зафиксирован</div>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <button id="btnBaseline" type="button" class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm px-3 py-2.5">
+              <i data-lucide="pin" class="w-4 h-4"></i>Зафиксировать текущий рейтинг как Базовый (Слот А)
+            </button>
+            <div class="flex items-center justify-between gap-2">
+              <div id="baselineInfo" class="text-[11px] text-slate-500"></div>
+              <button id="btnClearBaseline" type="button" class="text-xs text-rose-600 hover:underline shrink-0">Очистить слот</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- РОЛЬ 1: ГОРОЖАНИН — список проблем                                     -->
+    <!-- ===================================================================== -->
+    <section data-role-panel="citizen" class="bg-white border border-slate-200 rounded-xl">
+      <div class="px-4 py-3 border-b border-slate-200 flex flex-wrap items-center gap-2">
+        <h2 class="font-semibold text-slate-900 mr-auto flex items-center gap-2"><i data-lucide="list" class="w-4 h-4 text-indigo-600"></i>Проблемы города <span id="citizenListCount" class="text-xs font-medium text-slate-500"></span></h2>
+        <label for="citizenSort" class="text-xs text-slate-500">Сортировка:</label>
+        <select id="citizenSort" class="text-sm border border-slate-200 rounded-lg px-2 py-1.5 bg-white">
+          <option value="rank">По приоритету</option>
+          <option value="votes">По голосам</option>
+          <option value="new">Сначала новые</option>
+        </select>
+      </div>
+      <div id="citizenList" class="p-3 sm:p-4 grid md:grid-cols-2 2xl:grid-cols-3 gap-3"></div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- РОЛЬ 2: ОЦЕНЩИК — очередь модерации и реестр                           -->
+    <!-- ===================================================================== -->
+    <section data-role-panel="evaluator" class="grid lg:grid-cols-12 gap-4">
+      <div class="lg:col-span-7 bg-white border border-slate-200 rounded-xl">
+        <div class="px-4 py-3 border-b border-slate-200 flex items-center gap-2">
+          <i data-lucide="inbox" class="w-4 h-4 text-violet-600"></i>
+          <h2 class="font-semibold text-slate-900">Очередь модерации</h2>
+          <span id="queueCount" class="ml-1 text-xs font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">0</span>
+        </div>
+        <div id="queueList" class="p-3 sm:p-4 space-y-3"></div>
+      </div>
+      <div class="lg:col-span-5 space-y-4">
+        <div class="bg-white border border-slate-200 rounded-xl">
+          <div class="px-4 py-3 border-b border-slate-200 flex items-center gap-2">
+            <i data-lucide="clipboard-check" class="w-4 h-4 text-emerald-600"></i>
+            <h2 class="font-semibold text-slate-900">Реестр оценённых задач</h2>
+            <span id="registryCount" class="ml-1 text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">0</span>
+          </div>
+          <div id="registryList" class="divide-y divide-slate-100 max-h-[640px] overflow-y-auto scrollbar-thin"></div>
+        </div>
+        <details class="bg-white border border-slate-200 rounded-xl group">
+          <summary class="px-4 py-3 cursor-pointer flex items-center gap-2 select-none">
+            <i data-lucide="ban" class="w-4 h-4 text-rose-600"></i>
+            <span class="font-semibold text-slate-900">Отклонённые заявки</span>
+            <span id="rejectedCount" class="ml-1 text-xs font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">0</span>
+          </summary>
+          <div id="rejectedList" class="border-t border-slate-200 divide-y divide-slate-100"></div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- РОЛЬ 3: АДМИН / ЛАБОРАТОРИЯ МОДЕЛИ                                      -->
+    <!-- ===================================================================== -->
+    <section data-role-panel="admin" class="space-y-4">
+
+      <!-- Калькулятор формул -->
+      <div class="bg-white border border-slate-200 rounded-xl">
+        <div class="px-4 py-3 border-b border-slate-200 flex flex-wrap items-center gap-2">
+          <i data-lucide="sigma" class="w-4 h-4 text-indigo-600"></i>
+          <h2 class="font-semibold text-slate-900 mr-auto">Интерактивный калькулятор формул приоритета</h2>
+          <span class="text-xs text-slate-500">Math.js + KaTeX • пересчёт мгновенно</span>
+        </div>
+        <div class="p-4 grid xl:grid-cols-12 gap-5">
+          <div class="xl:col-span-8 space-y-3">
+            <div>
+              <div class="text-xs font-semibold text-slate-600 mb-1.5">Научные модели (пресеты)</div>
+              <div id="presetButtons" class="flex flex-wrap gap-2"></div>
+              <p id="presetDesc" class="text-xs text-slate-500 mt-2"></p>
+            </div>
+            <div>
+              <label for="formulaInput" class="text-xs font-semibold text-slate-600">Формула Y<sub>i</sub> = f(scope<sub>i</sub>)</label>
+              <textarea id="formulaInput" rows="3" spellcheck="false" class="mt-1 w-full font-mono text-[13px] leading-relaxed border-2 rounded-xl px-3 py-2.5 resize-y transition-shadow formula-valid focus:outline-none"></textarea>
+              <div class="flex flex-wrap items-start justify-between gap-2 mt-1">
+                <div id="formulaStatus" class="text-xs"></div>
+              </div>
+              <div id="formulaError" class="hidden mt-1.5 text-xs rounded-lg bg-rose-50 border border-rose-200 text-rose-700 px-3 py-2"></div>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+              <div class="text-[11px] text-slate-500 font-semibold flex items-center justify-between">
+                <span>LaTeX-предпросмотр</span><span id="formulaTexNote" class="font-normal"></span>
+              </div>
+              <div id="formulaTex" class="formula-tex text-slate-900 min-h-[44px]"></div>
+            </div>
+            <div id="varGroups" class="space-y-2.5"></div>
+          </div>
+          <div class="xl:col-span-4">
+            <div class="rounded-xl border border-slate-200 p-3">
+              <div class="flex items-center justify-between mb-2">
+                <div class="text-sm font-semibold text-slate-800">Весовые коэффициенты</div>
+                <div id="weightSum" class="text-xs text-slate-500 tabular"></div>
+              </div>
+              <div id="weightSliders" class="space-y-3"></div>
+              <div class="grid grid-cols-2 gap-2 mt-3">
+                <button id="btnNormalizeWeights" type="button" class="text-xs font-semibold rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 px-2 py-2">Нормировать веса к сумме = 1.0</button>
+                <button id="btnResetWeights" type="button" class="text-xs font-semibold rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-2 py-2">Веса по умолчанию</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Таблица рейтинга -->
+      <div class="bg-white border border-slate-200 rounded-xl">
+        <div class="px-4 py-3 border-b border-slate-200 flex flex-wrap items-center gap-2">
+          <i data-lucide="trophy" class="w-4 h-4 text-indigo-600"></i>
+          <h2 class="font-semibold text-slate-900">Итоговый рейтинг приоритетности</h2>
+          <span id="rankingMeta" class="text-xs text-slate-500 mr-auto"></span>
+          <button id="btnQuickAdd" type="button" class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold px-3 py-2">
+            <i data-lucide="plus" class="w-4 h-4"></i>Быстро добавить тестовую проблему со всеми параметрами
+          </button>
+        </div>
+        <div id="factorLegend" class="px-4 pt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600"></div>
+        <div class="overflow-x-auto scrollbar-thin">
+          <table class="w-full min-w-[1180px] text-sm">
+            <thead class="text-[11px] uppercase tracking-wide text-slate-500 bg-slate-50 border-y border-slate-200">
+              <tr>
+                <th class="px-3 py-2 text-left w-10">#</th>
+                <th class="px-2 py-2 text-left w-16" title="Смещение относительно Слота А">Δ</th>
+                <th class="px-2 py-2 text-left">Проблема</th>
+                <th class="px-1 py-2 text-right w-16" title="Серьёзность 1–10">S</th>
+                <th class="px-1 py-2 text-right w-16" title="Срочность 1–10">U</th>
+                <th class="px-1 py-2 text-right w-24" title="Охват жителей, чел.">P, чел.</th>
+                <th class="px-1 py-2 text-right w-20" title="Стоимость, млн ₸">C, млн ₸</th>
+                <th class="px-1 py-2 text-right w-16" title="Лёгкость реализации 1–10">F</th>
+                <th class="px-1 py-2 text-right w-20" title="Голоса жителей">V, гол.</th>
+                <th class="px-2 py-2 text-right w-16">Балл</th>
+                <th class="px-2 py-2 text-center w-16" title="Место по методу TOPSIS">TOPSIS</th>
+                <th class="px-2 py-2 text-left w-56">Вклад факторов (XAI)</th>
+                <th class="px-2 py-2 text-left w-40">Статус</th>
+                <th class="px-2 py-2 w-16"></th>
+              </tr>
+            </thead>
+            <tbody id="rankingBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Аналитика: 3 графика -->
+      <div class="grid lg:grid-cols-2 2xl:grid-cols-3 gap-4">
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <h3 class="font-semibold text-slate-900 text-sm">Матрица «Стоимость vs Балл приоритетности»</h3>
+          <p class="text-xs text-slate-500">Размер точки — охват жителей. Клик по точке — XAI-объяснение.</p>
+          <div class="relative h-72 mt-2"><canvas id="chartScatter"></canvas></div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <h3 class="font-semibold text-slate-900 text-sm">Сравнение методов: формула vs TOPSIS</h3>
+          <p class="text-xs text-slate-500">Баллы масштабированы к 100 у лидера каждого метода.</p>
+          <div class="relative h-72 mt-2"><canvas id="chartCompare"></canvas></div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4 lg:col-span-2 2xl:col-span-1">
+          <h3 class="font-semibold text-slate-900 text-sm">Распределение бюджета по категориям</h3>
+          <p class="text-xs text-slate-500">Выделено и дефицит, млн ₸.</p>
+          <div class="relative h-72 mt-2"><canvas id="chartBudget"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Справочник -->
+      <div class="bg-white border border-slate-200 rounded-xl">
+        <div class="px-4 py-3 border-b border-slate-200 flex flex-wrap items-center gap-2">
+          <i data-lucide="book-open" class="w-4 h-4 text-indigo-600"></i>
+          <h2 class="font-semibold text-slate-900 mr-auto">Управление справочником проблем (PROBLEM_CATALOG)</h2>
+          <div class="flex gap-2 w-full sm:w-auto">
+            <input id="newCategoryInput" type="text" maxlength="80" placeholder="Новая категория" class="flex-1 sm:w-64 text-sm border border-slate-200 rounded-lg px-2.5 py-1.5" />
+            <button id="btnAddCategory" type="button" class="text-sm font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5">Добавить</button>
+          </div>
+        </div>
+        <div id="catalogList" class="p-4 grid md:grid-cols-2 2xl:grid-cols-4 gap-3"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="max-w-[1600px] mx-auto px-3 sm:px-5 pb-8 pt-2 text-xs text-slate-400 flex flex-wrap gap-x-3 gap-y-1">
+    <span>CityMind — СППР для г. Экибастуз</span><span>•</span>
+    <span>Данные хранятся локально в браузере (localStorage)</span><span>•</span>
+    <span>Карта © OpenStreetMap contributors</span>
+  </footer>
+
+  <!-- ===================================================================== -->
+  <!-- МОДАЛЬНЫЕ ОКНА                                                          -->
+  <!-- ===================================================================== -->
+
+  <!-- Лайтбокс фотодоказательств -->
+  <div id="modalLightbox" data-modal class="hidden fixed inset-0 z-[70] bg-slate-950/90 flex items-center justify-center p-3 sm:p-8">
+    <button type="button" data-action="close" class="absolute top-3 right-3 text-white/80 hover:text-white p-2 text-2xl leading-none" aria-label="Закрыть">✕</button>
+    <button id="lbPrev" type="button" class="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white text-xl" aria-label="Предыдущее">‹</button>
+    <button id="lbNext" type="button" class="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white text-xl" aria-label="Следующее">›</button>
+    <figure class="max-w-5xl w-full">
+      <div class="relative">
+        <img id="lbImg" src="" alt="Фотодоказательство" class="w-full max-h-[75vh] object-contain rounded-lg bg-black" />
+        <div id="lbStamp" class="absolute top-3 left-3 bg-emerald-600/95 text-white text-[11px] sm:text-xs font-semibold px-2.5 py-1.5 rounded-md shadow border border-emerald-300/50 rotate-[-2deg]"></div>
+      </div>
+      <figcaption id="lbCaption" class="text-white/80 text-xs sm:text-sm mt-3 text-center"></figcaption>
+    </figure>
+  </div>
+
+  <!-- XAI-карточка объяснения -->
+  <div id="modalExplain" data-modal class="hidden fixed inset-0 z-[60] bg-slate-900/50 flex items-end sm:items-center justify-center sm:p-6">
+    <div class="bg-white w-full sm:max-w-3xl max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl shadow-2xl">
+      <div class="sticky top-0 bg-white/95 backdrop-blur border-b border-slate-200 px-4 sm:px-5 py-3 flex items-center gap-2 z-10">
+        <i data-lucide="sparkles" class="w-5 h-5 text-indigo-600"></i>
+        <h3 class="font-bold text-slate-900 mr-auto">Аналитическое заключение (Explainable AI)</h3>
+        <button type="button" data-action="close" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 text-lg leading-none" aria-label="Закрыть">✕</button>
+      </div>
+      <div id="explainBody" class="p-4 sm:p-5"></div>
+    </div>
+  </div>
+
+  <!-- Форма технической экспертизы -->
+  <div id="modalEval" data-modal class="hidden fixed inset-0 z-[60] bg-slate-900/50 flex items-end sm:items-center justify-center sm:p-6">
+    <div class="bg-white w-full sm:max-w-2xl max-h-[94vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl shadow-2xl">
+      <div class="sticky top-0 bg-white/95 backdrop-blur border-b border-slate-200 px-4 sm:px-5 py-3 flex items-center gap-2 z-10">
+        <i data-lucide="clipboard-pen" class="w-5 h-5 text-indigo-600"></i>
+        <h3 class="font-bold text-slate-900 mr-auto">Паспорт технической экспертизы</h3>
+        <button type="button" data-action="close" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 text-lg leading-none" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="p-4 sm:p-5 space-y-4">
+        <div id="evHeader"></div>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <div class="flex justify-between text-xs font-semibold text-slate-600"><label for="evSeverity">Серьёзность / степень износа</label><span id="evSeverityVal" class="text-rose-600 tabular">5</span></div>
+            <input id="evSeverity" type="range" min="1" max="10" step="1" class="w-full mt-1" />
+          </div>
+          <div>
+            <div class="flex justify-between text-xs font-semibold text-slate-600"><label for="evUrgency">Срочность / риск аварии</label><span id="evUrgencyVal" class="text-orange-600 tabular">5</span></div>
+            <input id="evUrgency" type="range" min="1" max="10" step="1" class="w-full mt-1" />
+          </div>
+          <div class="sm:col-span-2">
+            <label for="evPopulation" class="text-xs font-semibold text-slate-600">Охват жителей, чел.</label>
+            <div class="flex gap-2 mt-1">
+              <input id="evPopulation" type="number" min="0" step="100" class="flex-1 text-sm border border-slate-200 rounded-lg px-2.5 py-2 tabular" />
+              <button id="evGis" type="button" class="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 px-3">
+                🛰 ГИС-оценка по плотности застройки
+              </button>
+            </div>
+            <div id="evGisNote" class="text-[11px] text-slate-500 mt-1"></div>
+          </div>
+          <div>
+            <label for="evCost" class="text-xs font-semibold text-slate-600">Сметная стоимость решения, млн ₸</label>
+            <input id="evCost" type="number" min="0.1" step="0.5" class="w-full mt-1 text-sm border border-slate-200 rounded-lg px-2.5 py-2 tabular" />
+          </div>
+          <div>
+            <div class="flex justify-between text-xs font-semibold text-slate-600"><label for="evFeasibility">Лёгкость и быстрота реализации</label><span id="evFeasibilityVal" class="text-sky-600 tabular">5</span></div>
+            <input id="evFeasibility" type="range" min="1" max="10" step="1" class="w-full mt-2" />
+          </div>
+        </div>
+        <div class="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end pt-2 border-t border-slate-100">
+          <button type="button" data-action="close" class="rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold px-4 py-2.5">Отмена</button>
+          <button id="evSubmit" type="button" class="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2.5">✓ Утвердить паспорт и включить в рейтинг</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Отклонение заявки -->
+  <div id="modalReject" data-modal class="hidden fixed inset-0 z-[60] bg-slate-900/50 flex items-end sm:items-center justify-center sm:p-6">
+    <div class="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl">
+      <div class="border-b border-slate-200 px-4 sm:px-5 py-3 flex items-center gap-2">
+        <h3 class="font-bold text-slate-900 mr-auto">Отклонить заявку</h3>
+        <button type="button" data-action="close" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 text-lg leading-none" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="p-4 sm:p-5 space-y-3">
+        <div id="rjTitle" class="text-sm text-slate-700"></div>
+        <div>
+          <label for="rjReason" class="text-xs font-semibold text-slate-600">Причина отклонения</label>
+          <select id="rjReason" class="w-full mt-1 text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-white"></select>
+        </div>
+        <div>
+          <label for="rjComment" class="text-xs font-semibold text-slate-600">Комментарий (необязательно)</label>
+          <textarea id="rjComment" rows="2" maxlength="300" class="w-full mt-1 text-sm border border-slate-200 rounded-lg px-2.5 py-2"></textarea>
+        </div>
+        <div class="flex gap-2 justify-end pt-1">
+          <button type="button" data-action="close" class="rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold px-4 py-2">Отмена</button>
+          <button id="rjSubmit" type="button" class="rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold px-4 py-2">Отклонить заявку</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Контейнер уведомлений -->
+  <div id="toastHost" class="fixed z-[80] bottom-3 right-3 left-3 sm:left-auto sm:w-96 space-y-2 pointer-events-none" aria-live="polite"></div>
+
+  <!-- ===================================================================== -->
+  <!-- СКРИПТЫ ПРИЛОЖЕНИЯ (классические, строгий порядок, без ES-модулей)     -->
+  <!-- ===================================================================== -->
+  <script src="data.js"></script>
+  <script src="math.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
