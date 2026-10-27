@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CityMind — Руководство по проекту и материалы для защиты</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white; color: black; font-size: 11pt; }
+      .page-break { page-break-before: always; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans leading-relaxed selection:bg-indigo-100 selection:text-indigo-900">
+
+  <!-- Навигационная полоса -->
+  <header class="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200 shadow-xs no-print">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-base shadow-xs">CM</div>
+        <div class="font-bold text-slate-900 text-sm sm:text-base leading-tight">
+          CityMind • <span class="text-indigo-600">Руководство & Материалы к защите</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="index.html" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors">
+          ← Открыть приложение CityMind
+        </a>
+        <button onclick="window.print()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-xs">
+          🖨 Печать / Сохранить в PDF
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-8 space-y-10">
+
+    <!-- Титульный блок -->
+    <div class="bg-gradient-to-br from-indigo-900 via-indigo-800 to-slate-900 text-white rounded-2xl p-6 sm:p-10 shadow-xl relative overflow-hidden">
+      <div class="absolute -right-10 -bottom-10 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-indigo-200 text-xs font-semibold tracking-wide uppercase mb-3">
+        Научно-исследовательский и инженерный IT-проект
+      </div>
+      <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+        Интеллектуальная система поддержки принятия решений (СППР) по приоритизации городских проблем г. Экибастуз
+      </h1>
+      <p class="mt-3 text-sm sm:text-base text-indigo-100 max-w-3xl leading-relaxed">
+        Полное методическое руководство, математическое обоснование моделей, весовых коэффициентов и готовая шпаргалка для успешной защиты проекта перед комиссией.
+      </p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-white/10 text-xs">
+        <div><span class="text-indigo-300 block">Полигон проекта:</span><b class="text-white">г. Экибастуз (РК)</b></div>
+        <div><span class="text-indigo-300 block">Направление:</span><b class="text-white">Информатика & Математика</b></div>
+        <div><span class="text-indigo-300 block">Архитектура:</span><b class="text-white">GovTech СППР (DSS)</b></div>
+        <div><span class="text-indigo-300 block">Стек реализации:</span><b class="text-white">Pure Vanilla JS (No-Build)</b></div>
+      </div>
+    </div>
+
+    <!-- Быстрая навигация -->
+    <nav class="bg-white border border-slate-200 rounded-xl p-4 shadow-xs no-print">
+      <div class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Быстрое оглавление:</div>
+      <div class="flex flex-wrap gap-2 text-xs font-medium">
+        <a href="#section-1" class="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">1. Паспорт и актуальность</a>
+        <a href="#section-2" class="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">2. Архитектура и 3 роли</a>
+        <a href="#section-3" class="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">3. Шесть факторов (S, U, P, C, F, V)</a>
+        <a href="#section-4" class="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">4. Весовые коэффициенты</a>
+        <a href="#section-5" class="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">5. Разбор формул моделей</a>
+        <a href="#section-6" class="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">6. Кластеризация и TOPSIS</a>
+        <a href="#section-7" class="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">7. Шпаргалка для защиты</a>
+        <a href="#section-8" class="px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors">8. Хостинг на GitHub Pages</a>
+      </div>
+    </nav>
+
+    <!-- РАЗДЕЛ 1: ПАСПОРТ И АКТУАЛЬНОСТЬ -->
+    <section id="section-1" class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-4">
+      <div class="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+        <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">01</div>
+        <h2 class="text-xl font-bold text-slate-900">Паспорт проекта и обоснование актуальности</h2>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6 text-sm">
+        <div>
+          <h3 class="font-bold text-slate-900 mb-2">Какую реальную проблему решает проект?</h3>
+          <p class="text-slate-600 text-justify">
+            Зимой 2022 года в моногороде Экибастуз произошла масштабная техногенная авария на теплосетях: из-за износа труб свыше 80% без тепла в сорокаградусные морозы остались 149 многоквартирных домов и более 40 000 жителей. 
+            Главная системная причина таких катастроф — <b>отсутствие объективного математического инструмента приоритизации</b>. Бюджет всегда ограничен, а решения часто принимаются субъективно, под влиянием бюрократии или жалоб в соцсетях.
+          </p>
+        </div>
+        <div>
+          <h3 class="font-bold text-slate-900 mb-2">Какое решение предлагает CityMind?</h3>
+          <p class="text-slate-600 text-justify">
+            CityMind — это веб-платформа класса <b>СППР (Система Поддержки Принятия Решений / Decision Support System)</b>. Она объединяет краудсорсинг обращений жителей, техническую паспортизацию инженеров и <b>многокритериальные математические модели</b>, позволяющие объективно, прозрачно и защищённо от коррупции распределять городской бюджет между сотнями проектов.
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-4 text-xs sm:text-sm text-indigo-950">
+        <b>💡 Формулировка научной новизны для комиссии:</b>
+        «В отличие от существующих систем сбора жалоб (e-Otinish, Сергек, Open Almaty), выполняющих роль простой цифровой книги жалоб, CityMind реализует замкнутый цикл: <i>Геопривязка → Устранение дублей кластеризацией Complete-Linkage → Научный расчет рейтинга в Math.js → Верификация эталоном TOPSIS → Автоматическое портфельное распределение бюджета → Аналитическая сводка влияния факторов</i>».
+      </div>
+    </section>
+
+    <!-- РАЗДЕЛ 2: АРХИТЕКТУРА И 3 РОЛИ -->
+    <section id="section-2" class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-4">
+      <div class="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+        <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">02</div>
+        <h2 class="text-xl font-bold text-slate-900">Архитектура и ролевая модель платформы</h2>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="rounded-xl border border-slate-200 p-4 bg-slate-50/50 flex flex-col justify-between">
+          <div>
+            <div class="text-2xl mb-1">👤</div>
+            <h3 class="font-bold text-slate-900 text-sm">1. Горожанин (Краудсорсинг)</h3>
+            <ul class="text-xs text-slate-600 mt-2 space-y-1 list-disc list-inside">
+              <li>Подача геозаявки кликом по карте или по GPS</li>
+              <li>Прикрепление фотодоказательств сжатием в Canvas</li>
+              <li>Двухуровневый классификатор проблем (исключает опечатки)</li>
+              <li>Голосование за социально значимые заявки соседей</li>
+            </ul>
+          </div>
+          <div class="mt-3 text-[11px] font-semibold text-indigo-600 bg-indigo-50 rounded px-2 py-1">Роль: Народный мониторинг</div>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 p-4 bg-slate-50/50 flex flex-col justify-between">
+          <div>
+            <div class="text-2xl mb-1">🛠</div>
+            <h3 class="font-bold text-slate-900 text-sm">2. Оценщик (Экспертиза)</h3>
+            <ul class="text-xs text-slate-600 mt-2 space-y-1 list-disc list-inside">
+              <li>Техническая модерация и заполнение паспорта (S, U, C, F)</li>
+              <li>ГИС-оценка охвата жителей (P) по плотности застройки</li>
+              <li>Пространственное слияние дубликатов (Complete-Linkage)</li>
+              <li>Возможность обоснованного отклонения с фиксацией причины</li>
+            </ul>
+          </div>
+          <div class="mt-3 text-[11px] font-semibold text-emerald-600 bg-emerald-50 rounded px-2 py-1">Роль: Профессиональный аудит</div>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 p-4 bg-slate-50/50 flex flex-col justify-between">
+          <div>
+            <div class="text-2xl mb-1">🔬</div>
+            <h3 class="font-bold text-slate-900 text-sm">3. Аналитик (Лаборатория моделей)</h3>
+            <ul class="text-xs text-slate-600 mt-2 space-y-1 list-disc list-inside">
+              <li>Интерактивный конструктор математических формул Math.js</li>
+              <li>Настройка 6 весовых коэффициентов с автонормировкой к 1.0</li>
+              <li>Портфельное распределение бюджета (Sequential vs Greedy)</li>
+              <li>Аудит TOPSIS, коэффициент Спирмена и Аналитическая сводка</li>
+            </ul>
+          </div>
+          <div class="mt-3 text-[11px] font-semibold text-violet-600 bg-violet-50 rounded px-2 py-1">Роль: Принятие решений акиматом</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- РАЗДЕЛ 3: ШЕСТЬ ФАКТОРОВ -->
+    <section id="section-3" class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-4">
+      <div class="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+        <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">03</div>
+        <h2 class="text-xl font-bold text-slate-900">Математический фундамент: 6 базовых факторов</h2>
+      </div>
+
+      <p class="text-sm text-slate-600">
+        Для математической формализации каждой городской проблемы используется 6-мерный вектор признаков $\mathbf{X}_i = (S_i, U_i, P_i, C_i, F_i, V_i)$:
+      </p>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs sm:text-sm border border-slate-200 rounded-xl overflow-hidden">
+          <thead class="bg-slate-100 text-slate-700 font-semibold uppercase text-[11px] tracking-wider border-b border-slate-200">
+            <tr>
+              <th class="p-3 w-16">Символ</th>
+              <th class="p-3 w-40">Параметр</th>
+              <th class="p-3 w-28">Диапазон</th>
+              <th class="p-3 w-32">Тип в модели</th>
+              <th class="p-3">Физический смысл и обоснование</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 font-normal">
+            <tr>
+              <td class="p-3 font-bold text-rose-600 font-mono text-base">S</td>
+              <td class="p-3 font-semibold text-slate-900">Severity (Серьёзность)</td>
+              <td class="p-3">1 ... 10</td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-medium text-xs">Польза (+)</span></td>
+              <td class="p-3 text-slate-600">Степень разрушения или износа объекта. 10 — полный выход из строя магистрали, угроза жизнеобеспечению.</td>
+            </tr>
+            <tr>
+              <td class="p-3 font-bold text-amber-600 font-mono text-base">U</td>
+              <td class="p-3 font-semibold text-slate-900">Urgency (Срочность)</td>
+              <td class="p-3">1 ... 10</td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-medium text-xs">Польза (+)</span></td>
+              <td class="p-3 text-slate-600">Скорость нарастания катастрофических последствий. 10 — авария развивается прямо сейчас в зимний период.</td>
+            </tr>
+            <tr>
+              <td class="p-3 font-bold text-blue-600 font-mono text-base">P</td>
+              <td class="p-3 font-semibold text-slate-900">Population (Охват)</td>
+              <td class="p-3">0 ... 50 000+ чел.</td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-medium text-xs">Польза (+)</span></td>
+              <td class="p-3 text-slate-600">Число граждан, зависящих от объекта (микрорайон, школа, больница). Оценивается экспертом или модулем ГИС.</td>
+            </tr>
+            <tr>
+              <td class="p-3 font-bold text-slate-600 font-mono text-base">C</td>
+              <td class="p-3 font-semibold text-slate-900">Cost (Стоимость)</td>
+              <td class="p-3">0.1 ... 1000 млн ₸</td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-medium text-xs">Затраты (−)</span></td>
+              <td class="p-3 text-slate-600"><b>Единственный фактор затрат:</b> чем проект дороже при том же эффекте, тем менее эффективно расходуется бюджет (ставится в знаменатель).</td>
+            </tr>
+            <tr>
+              <td class="p-3 font-bold text-teal-600 font-mono text-base">F</td>
+              <td class="p-3 font-semibold text-slate-900">Feasibility (Лёгкость)</td>
+              <td class="p-3">1 ... 10</td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-medium text-xs">Польза (+)</span></td>
+              <td class="p-3 text-slate-600">Скорость и технологическая простота решения: 10 — локальный ремонт за 24 часа без длительных госэкспертиз (Quick Win).</td>
+            </tr>
+            <tr>
+              <td class="p-3 font-bold text-violet-600 font-mono text-base">V</td>
+              <td class="p-3 font-semibold text-slate-900">Votes (Голоса жителей)</td>
+              <td class="p-3">1 ... 10 000+</td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-medium text-xs">Польза (+)</span></td>
+              <td class="p-3 text-slate-600">Общественный резонанс: количество голосов горожан, поданных за проект через карту платформы.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- РАЗДЕЛ 4: ВЕСОВЫЕ КОЭФФИЦИЕНТЫ -->
+    <section id="section-4" class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-4">
+      <div class="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+        <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">04</div>
+        <h2 class="text-xl font-bold text-slate-900">Весовые коэффициенты $w_i$ и их нормировка</h2>
+      </div>
+
+      <p class="text-sm text-slate-600">
+        Весовые коэффициенты задают <b>приоритеты муниципальной политики</b>. Сумма весов строго нормируется к единице:
+      </p>
+
+      <div class="p-4 rounded-xl bg-slate-100 text-center font-mono text-base sm:text-lg font-bold text-slate-900 border border-slate-200">
+        $$w_S + w_U + w_P + w_C + w_F + w_V = 1.00 \quad \left(\sum_{k} w_k = 1\right)$$
+      </div>
+
+      <div class="grid sm:grid-cols-3 gap-3 text-xs">
+        <div class="p-3 rounded-lg border border-slate-200 bg-slate-50">
+          <b class="text-slate-900 block mb-1">Базовый баланс (Default):</b>
+          $w_S=0.25, w_U=0.25$ (техногенный риск — 50%), $w_P=0.20$ (люди), $w_V=0.10, w_F=0.10, w_C=0.10$.
+        </div>
+        <div class="p-3 rounded-lg border border-slate-200 bg-slate-50">
+          <b class="text-slate-900 block mb-1">Аварийно-критический сценарий:</b>
+          Увеличение $w_S$ и $w_U$ до $0.35$ каждый для экстренного купирования рисков замерзания систем зимой.
+        </div>
+        <div class="p-3 rounded-lg border border-slate-200 bg-slate-50">
+          <b class="text-slate-900 block mb-1">Народный бюджет (Social Focus):</b>
+          Увеличение $w_V$ (голоса) до $0.30$ и $w_P$ до $0.30$ для максимального учёта прямого мнения жителей.
+        </div>
+      </div>
+    </section>
+
+    <!-- РАЗДЕЛ 5: РАЗБОР ФОРМУЛ МОДЕЛЕЙ -->
+    <section id="section-5" class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-6">
+      <div class="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+        <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">05</div>
+        <h2 class="text-xl font-bold text-slate-900">Разбор 5 встроенных научных моделей</h2>
+      </div>
+
+      <!-- Модель 1 -->
+      <div class="border border-slate-200 rounded-xl p-4 sm:p-5 bg-slate-50/50 space-y-2">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-indigo-900 text-sm sm:text-base">Модель 1: Относительные доли (Relative Share Model)</h3>
+          <span class="text-xs px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 font-semibold">Базовая для г. Экибастуз</span>
+        </div>
+        <div class="p-3 bg-white rounded-lg border border-slate-200 overflow-x-auto text-center font-mono text-xs sm:text-sm">
+          $$Y_i = w_S \frac{S_i}{10} + w_U \frac{U_i}{10} + 3 w_P \frac{P_i}{\Sigma P} + 3 w_V \frac{V_i}{\Sigma V} + w_F \frac{F_i}{10} - 2 w_C \frac{C_i}{\Sigma C}$$
+        </div>
+        <p class="text-xs sm:text-sm text-slate-600 text-justify">
+          <b>Суть:</b> Охват жителей ($P_i$), голоса ($V_i$) и стоимость ($C_i$) сопоставляются не в абсолютных числах, а как доля от общегородской суммы. Это защищает от проблемы разных масштабов: миллионы тенге и тысячи людей корректно сопоставляются с баллами 1-10.
+        </p>
+      </div>
+
+      <!-- Модель 2 -->
+      <div class="border border-slate-200 rounded-xl p-4 sm:p-5 bg-slate-50/50 space-y-2">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-indigo-900 text-sm sm:text-base">Модель 2: Взвешенная сумма (Weighted Sum Model, WSM)</h3>
+          <span class="text-xs px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold">Классический стандарт</span>
+        </div>
+        <div class="p-3 bg-white rounded-lg border border-slate-200 overflow-x-auto text-center font-mono text-xs sm:text-sm">
+          $$Y_i = w_S \hat{S}_i + w_U \hat{U}_i + w_P \hat{P}_i + w_V \hat{V}_i + w_F \hat{F}_i + w_C \hat{C}_{\mathrm{inv}, i}$$
+        </div>
+        <p class="text-xs sm:text-sm text-slate-600 text-justify">
+          <b>Суть:</b> Каждый фактор нормализуется методом Мин-Макс в единый интервал $[0.01; 1.00]$. Фактор стоимости инвертируется: $\hat{C}_{\text{inv}} = 1 - \hat{C}$. Самый дешёвый проект получает по фактору стоимости 1.00 (наилучший балл), а самый дорогой — 0.01.
+        </p>
+      </div>
+
+      <!-- Модель 3 -->
+      <div class="border border-slate-200 rounded-xl p-4 sm:p-5 bg-slate-50/50 space-y-2">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-indigo-900 text-sm sm:text-base">Модель 3: Нелинейная модель с триггером аварийности</h3>
+          <span class="text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold">Аварийный триггер</span>
+        </div>
+        <div class="p-3 bg-white rounded-lg border border-slate-200 overflow-x-auto text-center font-mono text-xs sm:text-sm">
+          $$Y_i = \left(S_i \ge 9 \text{ или } U_i \ge 9 \;?\; 1.5 : 1.0\right) \cdot \left( \dots \right) \cdot \left(\frac{F_i}{C_i}\right)^{0.25}$$
+        </div>
+        <p class="text-xs sm:text-sm text-slate-600 text-justify">
+          <b>Суть:</b> Использует тернарный логический оператор. Если труба на грани разрыва ($S \ge 9$ или $U \ge 9$), проект получает аварийный мультипликатор $1.5\times$ и мгновенно поднимается в топ, спасая город от замерзания.
+        </p>
+      </div>
+
+      <!-- Модель 4 -->
+      <div class="border border-slate-200 rounded-xl p-4 sm:p-5 bg-slate-50/50 space-y-2">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-indigo-900 text-sm sm:text-base">Модель 4: Степенная функция отдачи масштаба (Кобб-Дуглас)</h3>
+          <span class="text-xs px-2 py-0.5 rounded bg-violet-100 text-violet-800 font-semibold">Эконометрика</span>
+        </div>
+        <div class="p-3 bg-white rounded-lg border border-slate-200 overflow-x-auto text-center font-mono text-xs sm:text-sm">
+          $$Y_i = \frac{\left(w_S \hat{S}_i^{1.5} + w_U \hat{U}_i^{1.5} + w_P \hat{P}_i + w_V \hat{V}_i\right) \cdot \hat{F}_i^{w_F}}{\hat{C}_i^{w_C}}$$
+        </div>
+        <p class="text-xs sm:text-sm text-slate-600 text-justify">
+          <b>Суть:</b> Степени $1.5$ нелинейно штрафуют средние повреждения в пользу критических, а стоимость в степени $w_C$ в знаменателе предотвращает финансирование сверхдорогих проектов с низким КПД.
+        </p>
+      </div>
+
+      <!-- Модель 5 -->
+      <div class="border border-slate-200 rounded-xl p-4 sm:p-5 bg-slate-50/50 space-y-2">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-indigo-900 text-sm sm:text-base">Модель 5: Рациональная модель удельной полезности</h3>
+          <span class="text-xs px-2 py-0.5 rounded bg-teal-100 text-teal-800 font-semibold">Удельный КПД</span>
+        </div>
+        <div class="p-3 bg-white rounded-lg border border-slate-200 overflow-x-auto text-center font-mono text-xs sm:text-sm">
+          $$Y_i = \frac{(w_S S_i + w_U U_i) \cdot \left(\frac{P_i}{\Sigma P} + \frac{V_i}{\Sigma V}\right) \cdot F_i}{C_i^{w_C}}$$
+        </div>
+        <p class="text-xs sm:text-sm text-slate-600 text-justify">
+          <b>Суть:</b> Произведение технической опасности на социальную долю, отнесённое к затратам. Обеспечивает максимальную отдачу на каждый вложенный миллион тенге.
+        </p>
+      </div>
+    </section>
+
+    <!-- РАЗДЕЛ 6: КЛАСТЕРИЗАЦИЯ И МЕТОД TOPSIS -->
+    <section id="section-6" class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-4">
+      <div class="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+        <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">06</div>
+        <h2 class="text-xl font-bold text-slate-900">Пространственная кластеризация и метод TOPSIS</h2>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6 text-sm">
+        <div class="space-y-2">
+          <h3 class="font-bold text-slate-900">1. Геодезическая метрика Хаверсина</h3>
+          <p class="text-slate-600 text-xs sm:text-sm">
+            Расстояние $d$ между двумя точками с координатами $(\varphi_1, \lambda_1)$ и $(\varphi_2, \lambda_2)$ на сфере радиуса $R=6371$ км:
+          </p>
+          <div class="p-2.5 bg-slate-50 border border-slate-200 rounded font-mono text-xs text-center">
+            $$d = 2R \arcsin \sqrt{\sin^2\left(\frac{\Delta\varphi}{2}\right) + \cos\varphi_1 \cos\varphi_2 \sin^2\left(\frac{\Delta\lambda}{2}\right)}$$
+          </div>
+          <p class="text-slate-600 text-xs">
+            <b>Complete-Linkage (Полная связь):</b> заявки объединяются, только если <i>все</i> попарные расстояния между точками не превышают $2R$. Это исключает «эффект сосиски/цепочки», когда заявки с противоположных концов города случайно сливались бы вместе.
+          </p>
+        </div>
+
+        <div class="space-y-2">
+          <h3 class="font-bold text-slate-900">2. Эталонный аудит методом TOPSIS</h3>
+          <p class="text-slate-600 text-xs sm:text-sm">
+            Международный алгоритм многокритериального анализа (Hwang & Yoon, 1981):
+          </p>
+          <ul class="text-xs text-slate-600 space-y-1 list-disc list-inside">
+            <li>Векторная нормализация матрицы решений: $r_{ij} = \frac{x_{ij}}{\sqrt{\sum_k x_{kj}^2}}$</li>
+            <li>Нахождение идеального решения $A^+$ и анти-идеала $A^-$</li>
+            <li>Расчет евклидовых дистанций $D_i^+$ и $D_i^-$</li>
+            <li>Коэффициент близости к идеалу: $C_i^* = \frac{D_i^-}{D_i^+ + D_i^-} \in [0; 1]$</li>
+          </ul>
+          <p class="text-slate-600 text-xs">
+            Если пользовательская формула и TOPSIS показывают одинаковый топ, это служит <b>математической гарантией объективности</b>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- РАЗДЕЛ 7: ШПАРГАЛКА ДЛЯ ЗАЩИТЫ -->
+    <section id="section-7" class="bg-indigo-900 text-white rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
+      <div class="flex items-center gap-2.5 pb-3 border-b border-indigo-800">
+        <div class="w-7 h-7 rounded-lg bg-indigo-500 text-white flex items-center justify-center font-bold text-xs">07</div>
+        <h2 class="text-xl font-bold">Шпаргалка: речь на защиту и ответы на каверзные вопросы</h2>
+      </div>
+
+      <!-- Речь -->
+      <div class="bg-white/10 rounded-xl p-4 sm:p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-indigo-200 text-sm uppercase tracking-wider">🎤 Пример речи на 3 минуты для комиссии</h3>
+          <span class="text-xs bg-indigo-500/30 px-2 py-0.5 rounded text-indigo-200">Тайминг: ~180 сек</span>
+        </div>
+        <div class="text-xs sm:text-sm text-indigo-100 space-y-2 leading-relaxed">
+          <p>
+            «Уважаемые члены государственной комиссии! Тема моего проекта — <b>"Интеллектуальная система поддержки принятия решений по приоритизации городских проблем на примере г. Экибастуз"</b>.
+          </p>
+          <p>
+            <b>Актуальность:</b> Авария 2022 года в Экибастузе показала, что при износе сетей в 80% и дефиците бюджета городская администрация не имеет права на ошибку. Традиционные методы распределения средств часто страдают от субъективности и человеческого фактора.
+          </p>
+          <p>
+            <b>Цель и решение:</b> Мной разработана цифровая экосистема СППР с открытой математической моделью. Система объединяет 3 роли: горожане подают заявки с геопривязкой, инженеры заполняют технические паспорта износа и срочности, а аналитическая лаборатория рассчитывает единый общегородской рейтинг.
+          </p>
+          <p>
+            <b>Научная новизна:</b> 
+            1) Для объединения дублей заявок применён алгоритм кластеризации полной связи Complete-Linkage на метрике Хаверсина. 
+            2) Реализован конструктор формул на базе Math.js с KaTeX-рендерингом и динамической балансировкой 6 весовых коэффициентов. 
+            3) Каждый балл сопровождается модулем аналитической сводки методом пофакторного исключения (Marginal Ablation) и верифицируется эталонным алгоритмом TOPSIS с корреляцией Спирмена.
+            4) Распределение бюджета выполняется в двух режимах, включая "жадный" алгоритм Greedy Portfolio Fill.
+          </p>
+          <p>
+            Проект полностью автономен, работает в браузере без серверов и готов к внедрению в акиматах моногородов Казахстана. Спасибо за внимание, готов ответить на ваши вопросы!»
+          </p>
+        </div>
+      </div>
+
+      <!-- Каверзные вопросы -->
+      <div class="space-y-3">
+        <h3 class="font-bold text-indigo-200 text-sm uppercase tracking-wider">❓ Топ-5 каверзных вопросов жюри и готовые ответы</h3>
+        
+        <div class="space-y-2 text-xs sm:text-sm">
+          <details class="bg-white/5 border border-white/10 rounded-xl p-3 cursor-pointer group">
+            <summary class="font-bold text-white flex items-center justify-between">
+              <span>1. «Почему вы не использовали обычную нейросеть (Deep Learning)?»</span>
+              <span class="text-indigo-400 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <p class="text-indigo-200 mt-2 text-justify">
+              <b>Ответ:</b> «Нейросеть — это "чёрный ящик". Если алгоритм отдаст 100 млн ₸ на объект А вместо объекта Б, нейросеть не сможет юридически объяснить причину жителям и Антикоррупционной службе. В GovTech и бюджетном планировании критически важна <i>объяснимость (Explainable AI / Аналитическая сводка)</i> и строгая воспроизводимость формулы, что и обеспечивает CityMind».
+            </p>
+          </details>
+
+          <details class="bg-white/5 border border-white/10 rounded-xl p-3 cursor-pointer group">
+            <summary class="font-bold text-white flex items-center justify-between">
+              <span>2. «Как система защищена от накрутки голосов жителями?»</span>
+              <span class="text-indigo-400 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <p class="text-indigo-200 mt-2 text-justify">
+              <b>Ответ:</b> «Во-первых, вес голосов ($w_V$) составляет всего 10% от итогового балла, в то время как техногенные риски ($S$ и $U$) дают 50%. Накрутка голосов физически не позволит второстепенной лавочке обогнать аварийную котельную. Во-вторых, реальный масштаб проблемы проверяется фактором охвата жителей ($P$) через объективную ГИС-оценку застройки».
+            </p>
+          </details>
+
+          <details class="bg-white/5 border border-white/10 rounded-xl p-3 cursor-pointer group">
+            <summary class="font-bold text-white flex items-center justify-between">
+              <span>3. «Откуда берутся данные о числе жителей (фактор P)?»</span>
+              <span class="text-indigo-400 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <p class="text-indigo-200 mt-2 text-justify">
+              <b>Ответ:</b> «В платформе реализован встроенный спутниковый ГИС-калькулятор. При нажатии кнопки "ГИС-оценка" система анализирует плотность застройки в радиусе проблемы: в секторе частных домов плотность 30 чел./га, в 5-этажках — 150 чел./га, в 9-этажных микрорайонах — 350 чел./га, что даёт обоснованную оценку охвата населения».
+            </p>
+          </details>
+
+          <details class="bg-white/5 border border-white/10 rounded-xl p-3 cursor-pointer group">
+            <summary class="font-bold text-white flex items-center justify-between">
+              <span>4. «Почему стоимость проекта (C) стоит в формулах со знаком минус или в знаменателе?»</span>
+              <span class="text-indigo-400 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <p class="text-indigo-200 mt-2 text-justify">
+              <b>Ответ:</b> «В теории исследования операций стоимость — это <i>минимизируемый критерий затрат (cost criterion)</i>. Если два проекта дают одинаковый социальный и противоаварийный эффект, но один стоит 5 млн ₸, а второй — 50 млн ₸, приоритет должен получить более дешёвый, так как его удельный КПД на 1 тенге в 10 раз выше».
+            </p>
+          </details>
+
+          <details class="bg-white/5 border border-white/10 rounded-xl p-3 cursor-pointer group">
+            <summary class="font-bold text-white flex items-center justify-between">
+              <span>5. «А если комиссия прямо сейчас захочет протестировать свою формулу?»</span>
+              <span class="text-indigo-400 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <p class="text-indigo-200 mt-2 text-justify">
+              <b>Ответ:</b> «Платформа интерактивна! Во вкладке "Лаборатория" мы можем нажать кнопку "+ Новая модель", ввести ваше математическое выражение, отрегулировать веса или лимит бюджета — и система мгновенно пересчитает весь рейтинг 16 проблем Экибастуза и обновит графики прямо на ваших глазах».
+            </p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- РАЗДЕЛ 8: ИНСТРУКЦИЯ ПО GITHUB PAGES -->
+    <section id="section-8" class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-4">
+      <div class="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+        <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">08</div>
+        <h2 class="text-xl font-bold text-slate-900">Инструкция: как бесплатно опубликовать сайт на GitHub Pages</h2>
+      </div>
+
+      <p class="text-sm text-slate-600">
+        Благодаря тому, что весь проект CityMind написан на чистом <b>Vanilla JS</b> (без Webpack, Node-сервера или сборщиков), его можно выложить в интернет на бесплатный хостинг <b>GitHub Pages</b> буквально за 3 минуты:
+      </p>
+
+      <div class="space-y-4 text-xs sm:text-sm">
+        <div class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50">
+          <span class="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">1</span>
+          <div>
+            <b class="text-slate-900 block">Создайте аккаунт и новый репозиторий на GitHub</b>
+            <p class="text-slate-600 mt-0.5">
+              Зайдите на <a href="https://github.com" target="_blank" class="text-indigo-600 underline">github.com</a>, нажмите зелёную кнопку <b>«New»</b>. Назовите репозиторий (например, <code class="bg-slate-200 px-1 rounded font-mono">citymind</code>), выберите тип <b>Public</b> и нажмите <b>«Create repository»</b>.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50">
+          <span class="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">2</span>
+          <div>
+            <b class="text-slate-900 block">Загрузите файлы проекта</b>
+            <p class="text-slate-600 mt-0.5">
+              В созданном репозитории нажмите <b>«uploading an existing file»</b>. Перетащите из папки проекта файлы:
+              <br><code class="font-mono bg-slate-200 px-1 rounded text-slate-800">index.html</code>, <code class="font-mono bg-slate-200 px-1 rounded text-slate-800">app.js</code>, <code class="font-mono bg-slate-200 px-1 rounded text-slate-800">data.js</code>, <code class="font-mono bg-slate-200 px-1 rounded text-slate-800">math.js</code>, <code class="font-mono bg-slate-200 px-1 rounded text-slate-800">guide.html</code>, <code class="font-mono bg-slate-200 px-1 rounded text-slate-800">README.md</code>.
+              Нажмите зелёную кнопку <b>«Commit changes»</b>.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50">
+          <span class="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">3</span>
+          <div>
+            <b class="text-slate-900 block">Включите GitHub Pages в настройках</b>
+            <p class="text-slate-600 mt-0.5">
+              Перейдите во вкладку <b>«Settings»</b> (шестерёнка в меню репозитория) → в левом меню выберите пункт <b>«Pages»</b>.
+              В блоке <b>«Build and deployment»</b>:
+              <br>• Source: выберите <b>«Deploy from a branch»</b>.
+              <br>• Branch: выберите ветку <b>«main»</b> (или master) и папку <b>«/ (root)»</b>.
+              <br>Нажмите кнопку <b>«Save»</b>.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/50">
+          <span class="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">4</span>
+          <div>
+            <b class="text-emerald-950 block">Готово! Получите готовую публичную ссылку</b>
+            <p class="text-slate-700 mt-0.5">
+              Подождите 1–2 минуты и обновите страницу настроек. Вверху появится зелёная плашка с вашим адресом сайта:
+              <br><code class="font-mono bg-white border border-emerald-200 px-2 py-0.5 rounded text-emerald-800 font-bold">https://&lt;ваш-логин&gt;.github.io/citymind/</code>
+              <br>Эту ссылку можно открывать с любого телефона, планшета или компьютера комиссии — проект будет работать мгновенно!
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="max-w-5xl mx-auto px-4 py-8 text-center text-xs text-slate-400 border-t border-slate-200 mt-12 no-print">
+    CityMind • Система поддержки принятия решений • Разработано для защиты проекта по г. Экибастуз
+  </footer>
+
+  <script>
+    // Инициализация рендеринга формул KaTeX
+    document.addEventListener("DOMContentLoaded", function() {
+      if (window.renderMathInElement) {
+        renderMathInElement(document.body, {
+          delimiters: [
+            { left: "$$", right: "$$", display: true },
+            { left: "$", right: "$", display: false }
+          ],
+          throwOnError: false
+        });
+      }
+    });
+  </script>
+</body>
+</html>

@@ -726,7 +726,7 @@
             <div class="text-sm font-bold text-indigo-700 tabular">${fmt(r.score, 1)}</div>
             <div class="flex flex-col gap-1 mt-1">
               <button type="button" data-action="evaluate" data-id="${esc(p.id)}" class="text-[11px] font-semibold text-indigo-600 hover:underline">Редактировать</button>
-              <button type="button" data-action="explain" data-id="${esc(p.id)}" class="text-[11px] font-semibold text-slate-600 hover:underline">XAI</button>
+              <button type="button" data-action="explain" data-id="${esc(p.id)}" class="text-[11px] font-semibold text-slate-600 hover:underline">Сводка</button>
             </div>
           </div>
         </div>
@@ -1018,7 +1018,7 @@
         </td>
         <td class="px-2 py-2 align-top">${statusBadge(p)}</td>
         <td class="px-2 py-2 align-top text-right whitespace-nowrap">
-          <button type="button" data-action="explain" data-id="${esc(p.id)}" class="p-1 rounded hover:bg-indigo-100" title="XAI-объяснение">🔍</button>
+          <button type="button" data-action="explain" data-id="${esc(p.id)}" class="p-1 rounded hover:bg-indigo-100" title="Аналитическая сводка">📊</button>
           <button type="button" data-action="delete" data-id="${esc(p.id)}" class="p-1 rounded hover:bg-rose-100" title="Удалить проблему">🗑</button>
         </td>
       </tr>`;
@@ -1332,10 +1332,6 @@
 
   function addCityLayers() {
     const map = rt.map;
-    map.addSource('city', { type: 'geojson', data: D.EKIBASTUZ_GEOJSON });
-    const isRoad = ['==', ['get', 'kind'], 'arterial'];
-    map.addLayer({ id: 'city-roads-casing', type: 'line', source: 'city', filter: isRoad, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-opacity': 0.75 } });
-    map.addLayer({ id: 'city-roads', type: 'line', source: 'city', filter: isRoad, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#64748b', 'line-width': 3, 'line-opacity': 0.5 } });
 
     map.addSource('clusters', { type: 'geojson', data: emptyFC() });
     map.addLayer({
@@ -1350,19 +1346,6 @@
     map.addSource('preview', { type: 'geojson', data: emptyFC() });
     map.addLayer({ id: 'preview-fill', type: 'fill', source: 'preview', paint: { 'fill-color': '#4f46e5', 'fill-opacity': 0.06 } });
     map.addLayer({ id: 'preview-line', type: 'line', source: 'preview', paint: { 'line-color': '#4f46e5', 'line-width': 2, 'line-dasharray': [2, 2] } });
-
-    // Подписи магистралей (HTML — не требуют шрифтов-глифов из интернета)
-    D.EKIBASTUZ_GEOJSON.features.filter((f) => f.properties.kind === 'arterial').forEach((f) => {
-      const c = f.geometry.coordinates;
-      const mid = c.length >= 3 ? c[Math.floor(c.length / 2)] : [(c[0][0] + c[1][0]) / 2, (c[0][1] + c[1][1]) / 2];
-      const pos = c.length >= 3
-        ? [(mid[0] + c[c.length - 1][0]) / 2, (mid[1] + c[c.length - 1][1]) / 2]
-        : mid;
-      const el = document.createElement('div');
-      el.className = 'cm-road-label';
-      el.textContent = f.properties.name;
-      rt.roadLabels.push(new window.maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(pos).addTo(map));
-    });
   }
 
   function markerSignature(p) {
@@ -1502,7 +1485,7 @@
            <button type="button" data-action="reject" data-id="${esc(p.id)}" class="text-xs font-semibold rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50 px-2 py-1.5">Отклонить</button>`
         : `<button type="button" data-action="evaluate" data-id="${esc(p.id)}" class="flex-1 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1.5">Редактировать паспорт</button>`;
     } else {
-      actions = `<button type="button" data-action="explain" data-id="${esc(p.id)}" class="flex-1 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1.5">🔍 Почему такое место? (XAI)</button>`;
+      actions = `<button type="button" data-action="explain" data-id="${esc(p.id)}" class="flex-1 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1.5">📊 Почему такое место? (Сводка)</button>`;
     }
     const photo = (p.photos || []).length
       ? `<button type="button" data-action="photo" data-id="${esc(p.id)}" data-index="0" class="block w-full h-24 rounded-lg overflow-hidden border border-slate-200 bg-slate-900 relative">
@@ -1894,7 +1877,7 @@
 
         <!-- Аналитический вывод естественным языком -->
         <div>
-          <h5 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Аналитическое заключение системы (Explainable AI)</h5>
+          <h5 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Аналитическая сводка по факторам</h5>
           <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
             Проблема заняла <b class="text-indigo-700">место #${r.rank}</b> в итоговом общегородском рейтинге г. Экибастуз с результатом <b>${fmt(r.score, 1)} баллов</b>.
             Главным драйвером высокой позиции стал фактор <b style="color:${META[leadF].color}">«${META[leadF].label}»</b>, давший <b>${fmt(r.contributions[leadF], 1)}%</b> общего математического вклада (метод пофакторного исключения Marginal Ablation).

@@ -132,7 +132,7 @@
         </div>
         <div class="min-w-0">
           <div class="font-extrabold tracking-tight text-slate-900 leading-tight">CityMind <span class="text-indigo-600">Экибастуз</span></div>
-          <div class="text-[11px] text-slate-500 leading-tight truncate">СППР приоритизации городских проблем • XAI</div>
+          <div class="text-[11px] text-slate-500 leading-tight truncate">СППР приоритизации городских проблем • Сводка</div>
         </div>
       </div>
 
@@ -144,6 +144,9 @@
       </nav>
 
       <div class="flex items-center gap-1.5">
+        <a href="guide.html" target="_blank" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors" title="Открыть руководство и материалы для защиты проекта перед комиссией">
+          <i data-lucide="book-open" class="w-4 h-4 text-emerald-600"></i><span class="hidden sm:inline">Руководство и защита</span>
+        </a>
         <button id="btnAbout" type="button" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100" title="О проекте CityMind">
           <i data-lucide="info" class="w-4 h-4"></i><span class="hidden sm:inline">О проекте</span>
         </button>
@@ -172,7 +175,7 @@
           <p class="text-sm text-slate-600 mt-1 max-w-4xl">
             CityMind — интерактивная система поддержки управленческих решений (СППР / DSS) для сбора, пространственной кластеризации,
             экспертной оценки и математической приоритизации городских проблем г. Экибастуз в условиях ограниченного бюджета
-            с прозрачным объяснением каждого решения (Explainable AI).
+            с прозрачным объяснением каждого решения (Аналитическая сводка).
           </p>
         </div>
         <button id="btnAboutClose" type="button" class="p-1.5 rounded-lg hover:bg-white text-slate-500" aria-label="Свернуть">
@@ -189,7 +192,7 @@
           <p class="text-slate-600 mt-1">Любая формула приоритета вводится на языке Math.js, проверяется «на лету» и рендерится в LaTeX (KaTeX). Ошибка ввода не ломает расчёт — сохраняется последний валидный рейтинг.</p>
         </div>
         <div class="bg-white/80 border border-slate-200 rounded-xl p-3">
-          <div class="font-semibold text-slate-900">3. Explainable AI (Marginal Ablation)</div>
+          <div class="font-semibold text-slate-900">3. Аналитическая сводка (Marginal Ablation)</div>
           <p class="text-slate-600 mt-1">Вклад каждого из 6 факторов в балл вычисляется пофакторным исключением даже для нелинейных формул и объясняется естественным русским языком.</p>
         </div>
         <div class="bg-white/80 border border-slate-200 rounded-xl p-3">
@@ -564,7 +567,7 @@
                 <th class="px-1 py-2 text-right w-20" title="Голоса жителей">V, гол.</th>
                 <th class="px-2 py-2 text-right w-16">Балл</th>
                 <th class="px-2 py-2 text-center w-16" title="Место по методу TOPSIS">TOPSIS</th>
-                <th class="px-2 py-2 text-left w-56">Вклад факторов (XAI)</th>
+                <th class="px-2 py-2 text-left w-56">Вклад факторов (Сводка)</th>
                 <th class="px-2 py-2 text-left w-40">Статус</th>
                 <th class="px-2 py-2 w-16"></th>
               </tr>
@@ -578,7 +581,7 @@
       <div class="grid lg:grid-cols-2 2xl:grid-cols-3 gap-4">
         <div class="bg-white border border-slate-200 rounded-xl p-4">
           <h3 class="font-semibold text-slate-900 text-sm">Матрица «Стоимость vs Балл приоритетности»</h3>
-          <p class="text-xs text-slate-500">Размер точки — охват жителей. Клик по точке — XAI-объяснение.</p>
+          <p class="text-xs text-slate-500">Размер точки — охват жителей. Клик по точке — аналитическая сводка.</p>
           <div class="relative h-72 mt-2"><canvas id="chartScatter"></canvas></div>
         </div>
         <div class="bg-white border border-slate-200 rounded-xl p-4">
@@ -632,12 +635,12 @@
     </figure>
   </div>
 
-  <!-- XAI-карточка объяснения -->
+  <!-- Аналитическая сводка по задаче -->
   <div id="modalExplain" data-modal class="hidden fixed inset-0 z-[60] bg-slate-900/50 flex items-end sm:items-center justify-center sm:p-6">
     <div class="bg-white w-full sm:max-w-3xl max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl shadow-2xl">
       <div class="sticky top-0 bg-white/95 backdrop-blur border-b border-slate-200 px-4 sm:px-5 py-3 flex items-center gap-2 z-10">
         <i data-lucide="sparkles" class="w-5 h-5 text-indigo-600"></i>
-        <h3 class="font-bold text-slate-900 mr-auto">Аналитическое заключение (Explainable AI)</h3>
+        <h3 class="font-bold text-slate-900 mr-auto">Аналитическая сводка по задаче</h3>
         <button type="button" data-action="close" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 text-lg leading-none" aria-label="Закрыть">✕</button>
       </div>
       <div id="explainBody" class="p-4 sm:p-5"></div>
